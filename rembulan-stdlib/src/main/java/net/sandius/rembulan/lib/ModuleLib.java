@@ -650,7 +650,7 @@ public final class ModuleLib {
 			name = name.replace(sep, rep);
 
 			ByteStringBuilder builder = new ByteStringBuilder();
-			ByteIterator it = path.byteIterator();
+			ByteIterator it = path.iterator();
 			while (it.hasNext()) {
 				byte b = it.nextByte();
 				switch (b) {

@@ -69,7 +69,7 @@ class LiteralTest extends FunSpec with MustMatchers {
 
     def raw(s: String) = ByteString.fromRaw(s)
     def j(s: String) = ByteString.of(s)
-    def utf(s: String) = ByteString.of(s, StandardCharsets.UTF_8)
+    def utf(s: String) = ByteString.of(s)
 
     go (raw("\"hello\""), utf("hello"))
     go (raw("'there'"), utf("there"))

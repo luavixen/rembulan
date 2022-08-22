@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +21,38 @@ import net.sandius.rembulan.util.ByteIterator;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 
-class ByteStringInputStream extends InputStream {
+/**
+ * An input stream that wraps a {@link net.sandius.rembulan.util.ByteIterator}.
+ */
+public class ByteStringInputStream extends InputStream {
 
 	private final ByteIterator iterator;
 
+	/**
+	 * Constructs a new input stream from the given byte iterator.
+	 *
+	 * @param iterator  byte iterator to wrap
+	 * @throws NullPointerException  if {@code iterator} is null
+	 */
 	public ByteStringInputStream(ByteIterator iterator) {
-		this.iterator = iterator;
+		this.iterator = Objects.requireNonNull(iterator);
+	}
+
+	/**
+	 * Constructs a new input stream from the given byte string.
+	 *
+	 * @param string  byte string to wrap
+	 * @throws NullPointerException  if {@code string} is null
+	 */
+	public ByteStringInputStream(ByteString string) {
+		this(string.iterator());
 	}
 
 	@Override
 	public int read() throws IOException {
-		return !iterator.hasNext() ? -1 : iterator.nextByte() & 0xff;
+		return iterator.hasNext() ? iterator.nextByte() & 0xFF : -1;
 	}
 
 }

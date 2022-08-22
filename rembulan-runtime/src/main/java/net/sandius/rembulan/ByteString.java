@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,475 +18,520 @@
 package net.sandius.rembulan;
 
 import net.sandius.rembulan.util.ByteIterator;
+import net.sandius.rembulan.util.ByteSink;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
- * Byte string, an immutable sequence of bytes.
+ * An immutable sequence of bytes.
  *
- * <p>The purpose of this class is to serve as a bridge between Java strings (with their
- * characters corresponding to 16-bit code units in the Basic Multilingual Plane (BMP))
- * and Lua strings (raw 8-bit sequences).</p>
+ * <p>The purpose of this class is to serve as a bridge between Java strings
+ * (with their characters corresponding to 16-bit code units in the Basic
+ * Multilingual Plane (BMP)) and Lua strings (raw 8-bit sequences).</p>
  *
- * <p>Byte strings come in two flavours:</p>
- * <ul>
- *     <li>one is a wrapper of {@link String java.lang.String} with a given {@link Charset}
- *       &mdash; constructed using {@link #of(String)};</li>
- *     <li>the other is a wrapper of a {@code byte} arrays
- *       &mdash; constructed using {@link #wrap(byte[])}.</li>
- * </ul>
- *
- * <p>The {@code ByteString} class provides the functionality for treating both cases
- * as sequences of bytes when they take part in Lua operations, and as Java strings when
- * used by an outer Java application. However, these perspectives are as <i>lazy</i>
- * as possible, in order to avoid doing unnecessary work.</p>
- *
- * <p>This class provides a natural lexicographical ordering that is consistent with equals.</p>
+ * <p>This class provides a natural lexicographical ordering that is consistent
+ * with equals.</p>
  */
-public abstract class ByteString implements Comparable<ByteString> {
+public final class ByteString implements Comparable<ByteString>, Iterable<Byte> {
 
-	ByteString() {
-		// no-op: package-private to restrict access
+	private final byte[] data;
+	private final int hash;
+
+	private volatile String string;
+
+	private ByteString(byte[] data, int hash, String string) {
+		this.data = data;
+		this.hash = hash;
+		this.string = string;
 	}
 
 	/**
-	 * Returns a new byte string corresponding to the bytes in {@code s} as encoded
-	 * by the specified {@code charset}.
+	 * Returns the length of this byte string.
 	 *
-	 * @param s  the string to take the byte view of, must not be {@code null}
-	 * @param charset  the charset to use for decoding {@code s} into bytes, must not be {@code null}
-	 * @return  a byte string perspective of {@code s} using {@code charset}
-	 *
-	 * @throws NullPointerException  if {@code s} or {@code charset} is {@code null}
-	 * @throws IllegalArgumentException  if {@code charset} does not provide encoding
-	 *                                   capability (see {@link Charset#canEncode()})
+	 * @return  the length of this byte string
 	 */
-	public static ByteString of(String s, Charset charset) {
-		return new StringByteString(s, charset);
+	public int length() {
+		return data.length;
 	}
 
 	/**
-	 * Returns a new byte string corresponding to the bytes in {@code s} as encoded
-	 * by the default charset ({@link Charset#defaultCharset()}).
+	 * Returns true if {@link #length()} is zero.
 	 *
-	 * @param s  the string to take the perspective of, must not be {@code null}
-	 * @return  a byte string perspective of {@code s}
-	 *
-	 * @throws NullPointerException  if {@code s} is {@code null}
+	 * @return  true if this byte string is empty
 	 */
-	public static ByteString of(String s) {
-		return of(s, Charset.defaultCharset());
+	public boolean isEmpty() {
+		return data.length == 0;
 	}
 
 	/**
-	 * Returns a new byte string corresponding to bytes in {@code s} by taking the
-	 * least significant byte of each character.
+	 * Returns the byte at position {@code index}.
 	 *
-	 * @param s  the string to get bytes from, must not be {@code null}
-	 * @return  a byte string based on {@code s} by taking the least significant
-	 *          byte of each char
-	 *
-	 * @throws NullPointerException  if {@code s} is {@code null}
+	 * @param index  index into this byte string
+	 * @return  the byte at the given index
+	 * @throws ArrayIndexOutOfBoundsException
+	 *   if {@code index} is out of bounds
 	 */
-	public static ByteString fromRaw(String s) {
-		byte[] bytes = new byte[s.length()];
-		for (int i = 0; i < bytes.length; i++) {
-			bytes[i] = (byte) ((int) s.charAt(i) & 0xff);
+	public byte byteAt(int index) {
+		return data[index];
+	}
+
+	/**
+	 * Returns a copy of the underlying byte array of this byte string.
+	 *
+	 * @return  newly created byte array
+	 */
+	public byte[] getBytes() {
+		return Arrays.copyOf(data, data.length);
+	}
+
+	public int indexOf(byte b, int start) {
+		for (int i = start, imax = data.length; i < imax; i++) {
+			if (data[i] == b) return i;
 		}
-		return wrap(bytes);
+		return -1;
+	}
+	public int indexOf(byte[] bytes, int start) {
+		final int dataLength = data.length;
+		final int bytesLength = bytes.length;
+
+		if (bytesLength == 0) {
+			throw new IllegalArgumentException("Argument 'bytes' is empty");
+		}
+		if (bytesLength == 1) {
+			return indexOf(bytes[0], start);
+		}
+
+		for (int i = start, imax = dataLength - bytesLength; i < imax; i++) {
+			boolean found = true;
+			for (int ii = 0; ii < bytesLength; ii++) {
+				if (data[i + ii] != bytes[ii]) {
+					found = false;
+					break;
+				}
+			}
+			if (found) return i;
+		}
+
+		return -1;
+	}
+	public int indexOf(ByteString value, int start) {
+		return indexOf(value.data, start);
+	}
+
+	public int indexOf(byte b) { return indexOf(b, 0); }
+	public int indexOf(byte[] bytes) { return indexOf(bytes, 0); }
+	public int indexOf(ByteString value) { return indexOf(value, 0); }
+
+	public boolean contains(byte b) { return indexOf(b) >= 0; }
+	public boolean contains(byte[] bytes) { return indexOf(bytes) >= 0; }
+	public boolean contains(ByteString value) { return indexOf(value) >= 0; }
+
+	public boolean startsWith(byte b) {
+		return data.length > 0 && data[0] == b;
+	}
+	public boolean startsWith(byte[] bytes) {
+		int length = bytes.length;
+		if (length > data.length) return false;
+		for (int i = 0; i < length; i++) {
+			if (data[i] != bytes[i]) return false;
+		}
+		return true;
+	}
+	public boolean startsWith(ByteString prefix) {
+		return startsWith(prefix.data);
+	}
+
+	public ByteString replace(byte a, byte b) {
+		return new ByteSink().write(data).replace(a, b).byteString();
+	}
+	public ByteString replace(byte[] target, byte[] replacement) {
+		return new ByteSink().write(data).replace(target, replacement).byteString();
+	}
+	public ByteString replace(ByteString target, ByteString replacement) {
+		return replace(target.data, replacement.data);
 	}
 
 	/**
-	 * Returns a byte string corresponding to the bytes in {@code s} as encoded by the default
-	 * charset in a form suitable for use as a string constant.
+	 * Returns a substring of this byte string.
 	 *
-	 * <p>This method differs from {@link #of(String)} in that it may force the computation
-	 * of lazily-evaluated properties of the resulting string at instantiation time and
-	 * cache them for use at runtime.</p>
-	 *
-	 * @param s  the string to get bytes from, must not be {@code null}
-	 * @return  a byte string based on a byte perspective of {@code s}
+	 * @param start  starting index, inclusive
+	 * @param end  ending index, exclusive
+	 * @return  byte string result
+	 * @throws IllegalArgumentException
+	 *   if the substring created by {@code start} and {@code end} is invalid
 	 */
-	public static ByteString constOf(String s) {
-		return of(s);
-	}
-
-	static ByteString wrap(byte[] bytes) {
-		return new ArrayByteString(bytes);
+	public ByteString substring(int start, int end) {
+		return copyOf(data, start, end);
 	}
 
 	/**
-	 * Returns a byte string containing a copy of the byte array {@code bytes}.
+	 * Returns a new byte string formed by concatenating this byte string with
+	 * {@code other}.
 	 *
-	 * @param bytes  the byte array to use as the byte string, must not be {@code null}
-	 * @return  a byte string containing a copy of {@code bytes}
+	 * <p>This method directly concatenates the underlying byte arrays and will
+	 * preserve unmappable and malformed characters occurring in the two
+	 * strings.</p>
 	 *
-	 * @throws NullPointerException  if {@code bytes} is {@code null}
+	 * @param other  byte string to concatenate with
+	 * @return  byte string result
+	 * @throws NullPointerException  if {@code other} is null
+	 */
+	public ByteString concat(ByteString other) {
+		Objects.requireNonNull(other);
+
+		final byte[] a = this.data;
+		final byte[] b = other.data;
+		final int aLength = a.length;
+		final int bLength = b.length;
+
+		final byte[] bytes = new byte[aLength + bLength];
+		System.arraycopy(a, 0, bytes, 0, aLength);
+		System.arraycopy(b, 0, bytes, aLength, bLength);
+
+		return intern(bytes, null);
+	}
+
+	/**
+	 * Compares this byte string lexicographically with {@code other}.
+	 *
+	 * <p>For the purposes of this ordering, bytes are interpreted as
+	 * <i>unsigned</i> integers.</p>
+	 *
+	 * <p>This method directly compares the underlying byte arrays. It is
+	 * therefore possible that for two byte {@code a} and {@code b}, the result
+	 * of their comparison will not be the same as the result of comparing
+	 * their Java string versions as provided by {@link #toString()}:</p>
+	 * <pre>
+	 *     int byteResult = a.compareTo(b);
+	 *     int stringResult = a.toString().compareTo(b.toString());
+	 *
+	 *     // May fail!
+	 *     assert Integer.signum(byteResult) == Integer.signum(stringResult);
+	 * </pre>
+	 *
+	 * <p>This is done in order to ensure that the natural ordering provided by
+	 * this method is consistent with equals.</p>
+	 *
+	 * @param other  byte string to be compared
+	 * @return
+	 *   a negative, zero, or positive integer if this byte string is
+	 *   lexicographically lesser than, equal to or greater than {@code other}
+	 * @throws NullPointerException  if {@code other} is null
+	 */
+	@Override
+	public int compareTo(ByteString other) {
+		Objects.requireNonNull(other);
+
+		final byte[] a = this.data;
+		final byte[] b = other.data;
+		final int aLength = a.length;
+		final int bLength = b.length;
+
+		for (int i = 0, length = Math.min(aLength, bLength); i < length; i++) {
+			int diff = (a[i] & 0xFF) - (b[i] & 0xFF);
+			if (diff != 0) return diff;
+		}
+
+		return aLength - bLength;
+	}
+
+	/**
+	 * Returns a hash code value for this byte string.
+	 *
+	 * <p>This value is precomputed at creation time and will not change, so
+	 * this method acts as a getter and has little performance impact.</p>
+	 *
+	 * @return  hash code value
+	 */
+	@Override
+	public int hashCode() {
+		return hash;
+	}
+
+	/**
+	 * Converts this byte string to a {@link java.lang.String} by encoding it
+	 * as UTF-8.
+	 *
+	 * @return  string representation of this byte string
+	 */
+	@Override
+	public String toString() {
+		String string = this.string;
+		if (string == null) {
+			string = new String(data, StandardCharsets.UTF_8);
+			this.string = string;
+		}
+		return string;
+	}
+
+	/**
+	 * Converts this byte string to a {@link java.lang.String} by
+	 * zero-extending each byte to a character. This method is the complement
+	 * of {@link #fromRaw(String)}.
+	 *
+	 * @return  raw string representation of this byte string
+	 */
+	public String toRawString() {
+		final int length = data.length;
+		final char[] chars = new char[length];
+		for (int i = 0; i < length; i++) {
+			chars[i] = (char) (data[i] & 0xff);
+		}
+		return new String(chars);
+	}
+
+	private static final class ByteIteratorImpl implements ByteIterator {
+		private final byte[] bytes;
+		private int index;
+
+		private ByteIteratorImpl(byte[] bytes) {
+			this.bytes = bytes;
+			this.index = 0;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return index < bytes.length;
+		}
+
+		@Override
+		public byte nextByte() {
+			if (!hasNext()) throw new NoSuchElementException();
+			return bytes[index++];
+		}
+
+		@Override
+		public Byte next() {
+			return nextByte();
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	/**
+	 * Returns an iterator over the bytes in this byte string.
+	 *
+	 * @return  byte iterator instance
+	 */
+	@Override
+	public ByteIterator iterator() {
+		return new ByteIteratorImpl(data);
+	}
+
+
+	/**
+	 * Returns a byte string containing a copy of {@code bytes}.
+	 *
+	 * @param bytes  byte array to copy
+	 * @return  byte string instance
+	 * @throws NullPointerException  if {@code bytes} is null
 	 */
 	public static ByteString copyOf(byte[] bytes) {
-		return copyOf(bytes, 0, bytes.length);
+		Objects.requireNonNull(bytes);
+		if (bytes.length == 0) return EMPTY;
+		return intern(bytes, null);
 	}
 
 	/**
-	 * Returns a byte string containing a copy of a slice of the byte array {@code bytes}
-	 * starting at the offset {@code offset} and consisting of {@code length} bytes.
+	 * Returns a byte string containing a slice of {@code bytes}.
 	 *
-	 * @param bytes  the byte array to use as the byte string, must not be {@code null}
-	 * @param offset  offset in {@code bytes} to start reading from
-	 * @param length  the number of bytes to copy from {@code bytes}
-	 * @return  a byte string containing a copy of {@code bytes}
-	 *
-	 * @throws NullPointerException  if {@code bytes} is {@code null}
-	 * @throws IndexOutOfBoundsException  if {@code offset} or {@code length} are negative,
-	 *                                    or if {@code (offset + length)} is greater than
-	 *                                    {@code bytes.length}
+	 * @param bytes  byte array to slice
+	 * @param start  starting index, inclusive
+	 * @param end  ending index, exclusive
+	 * @return  byte string instance
+	 * @throws IllegalArgumentException
+	 *   if the slice created by {@code start} and {@code end} is invalid
+	 * @throws NullPointerException  if {@code bytes} is null
 	 */
-	public static ByteString copyOf(byte[] bytes, int offset, int length) {
-		if (offset < 0 || length < 0 || (offset + length) > bytes.length) {
-			throw new IndexOutOfBoundsException("offset=" + offset + ", length=" + length);
-		}
+	public static ByteString copyOf(byte[] bytes, int start, int end) {
+		Objects.requireNonNull(bytes);
+		if (start == end) return EMPTY;
+		return intern(Arrays.copyOfRange(bytes, start, end), null);
+	}
 
-		return wrap(Arrays.copyOfRange(bytes, offset, length));
+	/**
+	 * Returns a byte string containing the UTF-8 representation of the given
+	 * string.
+	 *
+	 * <p>This method differs from {@link #of(String)} in that it may force the
+	 * computation of lazily-evaluated properties of the resulting byte string
+	 * at instantiation time and cache them for use at runtime.</p>
+	 *
+	 * @param string  string to convert
+	 * @return  byte string instance
+	 * @throws NullPointerException  if {@code string} is null
+	 */
+	public static ByteString constOf(String string) {
+		return of(string);
+	}
+
+	/**
+	 * Returns a byte string containing the UTF-8 representation of the given
+	 * string.
+	 *
+	 * @param string  string to convert
+	 * @return  byte string instance
+	 * @throws NullPointerException  if {@code string} is null
+	 */
+	public static ByteString of(String string) {
+		Objects.requireNonNull(string);
+		if (string.isEmpty()) return EMPTY;
+		return intern(string.getBytes(StandardCharsets.UTF_8), string);
+	}
+
+	/**
+	 * Returns a byte string corresponding to bytes in the given string by
+	 * taking the least significant byte of each character.
+	 *
+	 * @param string  string to convert
+	 * @return  byte string instance
+	 * @throws NullPointerException  if {@code string} is null
+	 */
+	public static ByteString fromRaw(String string) {
+		Objects.requireNonNull(string);
+		final char[] chars = string.toCharArray();
+		final byte[] bytes = new byte[chars.length];
+		for (int i = 0, length = bytes.length; i < length; i++) {
+			bytes[i] = (byte) ((int) chars[i] & 0xFF);
+		}
+		return intern(bytes, null);
 	}
 
 	/**
 	 * Returns an empty byte string.
 	 *
-	 * @return  an empty byte string
+	 * @return  byte string instance with zero length
 	 */
 	public static ByteString empty() {
-		return ArrayByteString.EMPTY_INSTANCE;
+		return EMPTY;
 	}
 
+
 	/**
-	 * Returns {@code true} if {@code o} is a byte string containing the same bytes as
-	 * this byte string.
+	 * Hashes an array of bytes using the FNV-1a hash function.
 	 *
-	 * <p><b>Note:</b> this method uses the strict interpretation of byte strings as byte
-	 * sequences. It is therefore <b>not</b> necessarily true that for two byte strings {@code a}
-	 * and {@code b}, the result of their comparison is the same as the result of comparing
-	 * their images provided by {@link #toString()}:</p>
-	 * <pre>
-	 *     boolean byteEq = a.equals(b);
-	 *     boolean stringEq = a.toString().equals(b.toString());
-	 *
-	 *     // may fail!
-	 *     assert (byteEq == stringEq);
-	 * </pre>
-	 *
-	 * @param o  object to evaluate for equality with, may be {@code null}
-	 * @return  {@code true} iff {@code o} is a byte string with equal contents to {@code this}
+	 * @param bytes  array of bytes to hash
+	 * @return  hash code derived from {@code bytes}
+	 * @throws NullPointerException  if {@code bytes} is null
 	 */
-	@Override
-	public final boolean equals(Object o) {
-		return this == o || o instanceof ByteString && this.equals((ByteString) o);
+	private static int fnv1a(byte[] bytes) {
+		int hash = 0x811C9DC5;
+		for (byte b : bytes) {
+			hash ^= b & 0xFF;
+			hash *= 16777619;
+		}
+		return hash;
 	}
 
-	/**
-	 * Returns the hash code of this byte string. The hash code is computed using the same
-	 * function as used by {@link String#hashCode()}, interpreting the byte string's bytes
-	 * as unsigned integers.
-	 *
-	 * @return  the hash code of this byte string
-	 */
-	@Override
-	public abstract int hashCode();
+	private static final class InternEntry extends WeakReference<ByteString> {
+		private final int hash;
+		private InternEntry next;
 
-	/**
-	 * Returns an integer <i>i</i> that corresponds to the hash code of this byte string
-	 * if <i>i</i> is non-zero. When <i>i</i> is zero, it <b>may or may not</b> be the hash code
-	 * of this string.
-	 *
-	 * @return  the hash code of this byte string if non-zero
-	 */
-	abstract int maybeHashCode();
-
-	abstract boolean equals(ByteString that);
-
-	/**
-	 * Returns a new byte array containing the bytes of this byte string.
-	 *
-	 * @return  a new byte array
-	 */
-	public abstract byte[] getBytes();
-
-	/**
-	 * Returns the byte at position {@code index}.
-	 *
-	 * @param index  the position in the string
-	 * @return  the byte at position {@code index}
-	 *
-	 * @throws IndexOutOfBoundsException  if {@code index < 0} or {@code index >= length()}
-	 */
-	public abstract byte byteAt(int index);
-
-	/**
-	 * Returns an iterator over the bytes in this byte string.
-	 *
-	 * @return  an iterator over the bytes in this byte string
-	 */
-	public abstract ByteIterator byteIterator();
-
-	/**
-	 * Returns an input stream that reads the contents of this string.
-	 *
-	 * @return an input stream that reads the contents of this string
-	 */
-	public InputStream asInputStream() {
-		return new ByteStringInputStream(byteIterator());
+		private InternEntry(ByteString referent, InternEntry next) {
+			super(referent, INTERN_QUEUE);
+			this.hash = referent.hash;
+			this.next = next;
+		}
 	}
 
-	/**
-	 * Returns the length of this byte string, i.e., the number of bytes it contains.
-	 *
-	 * @return  the length of this byte string
-	 */
-	public abstract int length();
+	private static final ReferenceQueue<ByteString> INTERN_QUEUE = new ReferenceQueue<>();
+	private static InternEntry[] INTERN_TABLE = new InternEntry[64];
+	private static int INTERN_SIZE = 0;
+
+	private static final ByteString EMPTY = intern(new byte[0], "");
 
 	/**
-	 * Returns an integer <i>i</i> that is equal to the length of this byte string if
-	 * <i>i</i> is non-negative. When <i>i</i> is negative, the length of this byte string
-	 * is not yet known.
+	 * Finds or creates an interned byte string for the given byte array. Note
+	 * that the byte array will be used directly, not copied.
 	 *
-	 * @return  the length of this byte string if non-negative
+	 * @param bytes  byte array to wrap
+	 * @param string
+	 *   optional Java string to associate with the resulting byte string, note that
+	 *   {@code Arrays.equals(bytes, string.getBytes(StandardCharsets.UTF_8))} must be true.
+	 * @return  interned byte string
+	 * @throws NullPointerException  if {@code bytes} is null
 	 */
-	abstract int maybeLength();
+	private static ByteString intern(byte[] bytes, String string) {
+		final int hash = fnv1a(bytes);
 
-	/**
-	 * Returns {@code true} iff this byte string is empty, i.e., if the number of bytes it
-	 * contains is 0.
-	 *
-	 * @return  {@code true} iff this byte string is empty
-	 */
-	public abstract boolean isEmpty();
+		synchronized (INTERN_QUEUE) {
+			final int mask = INTERN_TABLE.length - 1;
 
-	/**
-	 * Returns a substring of this byte string starting at position {@code start} (inclusive),
-	 * ending at position {@code end} (exclusive).
-	 *
-	 * <p>The indices refer to the <i>byte</i> position in the byte string.</p>
-	 *
-	 * @param start  the first index to include in the new substring (inclusive)
-	 * @param end  the smallest index immediately following the new substring in this byte string
-	 * @return  a substring of this byte string ranging from {@code start} (inclusive)
-	 *          to {@code end} (exclusive)
-	 *
-	 * @throws IndexOutOfBoundsException  if {@code start < 0}, {@code end > length()}
-	 *                                    or {@code start > end}
-	 */
-	public abstract ByteString substring(int start, int end);
+			for (;;) {
+				final InternEntry entry = (InternEntry) INTERN_QUEUE.poll();
+				if (entry == null) break;
 
-	/**
-	 * Puts the contents of this byte string to the specified {@code buffer}.
-	 *
-	 * @param buffer  the buffer to use, must not be {@code null}
-	 *
-	 * @throws NullPointerException  if {@code buffer} is {@code null}
-	 */
-	public abstract void putTo(ByteBuffer buffer);
+				final int index = entry.hash & mask;
+				InternEntry prev = INTERN_TABLE[index];
+				InternEntry next;
 
-	/**
-	 * Writes the contents of this byte string to the specified {@code stream}.
-	 *
-	 * @param stream  the stream to use, must not be {@code null}
-	 *
-	 * @throws IOException  when I/O error happens during the write
-	 * @throws NullPointerException  if {@code stream} is {@code null}
-	 */
-	public abstract void writeTo(OutputStream stream) throws IOException;
+				if (entry == prev) {
+					INTERN_TABLE[index] = entry.next;
+					INTERN_SIZE--;
+				} else {
+					while (prev != null) {
+						if (entry == (next = prev.next)) {
+							prev.next = entry.next;
+							INTERN_SIZE--;
+							break;
+						}
+						prev = next;
+					}
+				}
 
-	/**
-	 * Returns the interpretation of this byte string as a Java string.
-	 *
-	 * @return  the string represented by this byte string
-	 */
-	@Override
-	public abstract String toString();
+				entry.next = null;
+				entry.clear();
+			}
 
-	/**
-	 * Returns a string representation of this byte string that uses the specified
-	 * charset {@code charset} to decode characters from bytes.
-	 *
-	 * @param charset  the charset to use, must not be {@code null}
-	 * @return  this byte string decoded into a string using {@code charset}
-	 *
-	 * @throws NullPointerException  if {@code charset} is {@code null}
-	 */
-	public String decode(Charset charset) {
-		if (isEmpty()) return "";
+			for (InternEntry entry = INTERN_TABLE[hash & mask]; entry != null; entry = entry.next) {
+				final ByteString value = entry.get();
+				if (
+					value != null &&
+					value.hash == hash &&
+					Arrays.equals(value.data, bytes)
+				) {
+					if (string != null && value.string == null) {
+						value.string = string;
+					}
+					return value;
+				}
+			}
 
-		ByteBuffer byteBuffer = ByteBuffer.allocate(length());
-		putTo(byteBuffer);
-		byteBuffer.flip();
-		return charset.decode(byteBuffer).toString();
+			return internCreate(bytes, hash, string);
+		}
 	}
 
-	/**
-	 * Returns a string represented by this byte string decoded using the default charset
-	 * of the virtual machine.
-	 *
-	 * <p>This is effectively equivalent to {@link #decode(Charset)}
-	 * called with {@link Charset#defaultCharset()}.</p>
-	 *
-	 * @return  a string decoded from this byte string using the platform's default
-	 *          charset
-	 */
-	public String decode() {
-		return decode(Charset.defaultCharset());
-	}
+	private static ByteString internCreate(byte[] bytes, int hash, String string) {
+		int length = INTERN_TABLE.length;
 
-	/**
-	 * Returns a string in which all characters are directly mapped to the bytes in this
-	 * byte string by treating them as unsigned integers.
-	 *
-	 * <p>This method is the complement of {@link #fromRaw(String)}.</p>
-	 *
-	 * @return  a raw string based on this byte string
-	 */
-	public abstract String toRawString();
+		if (INTERN_SIZE >= (length >>> 1) + (length >>> 2)) {
+			final InternEntry[] oldTable = INTERN_TABLE;
+			final InternEntry[] newTable = INTERN_TABLE = new InternEntry[length <<= 1];
+			final int mask = length - 1;
 
-	/**
-	 * Compares this byte string lexicographically with {@code that}. Returns a negative
-	 * integer, zero, or a positive integer if {@code this} is lesser than, equal to or greater
-	 * than {@code that} in this ordering.
-	 *
-	 * <p>For the purposes of this ordering, bytes are interpreted as <i>unsigned</i>
-	 * integers.</p>
-	 *
-	 * <p><b>Note:</b> this method uses the strict interpretation of byte strings as byte
-	 * sequences. It is therefore <b>not</b> necessarily true that for two byte strings {@code a}
-	 * and {@code b}, the result of their comparison is the same as the result of comparing
-	 * their images provided by {@link #toString()}:</p>
-	 * <pre>
-	 *     int byteCmp = a.compareTo(b);
-	 *     int stringCmp = a.toString().compareTo(b.toString());
-	 *
-	 *     // may fail!
-	 *     assert(Integer.signum(byteCmp) == Integer.signum(stringCmp));
-	 * </pre>
-	 *
-	 * <p>This is done in order to ensure that the natural ordering provided by this
-	 * {@code compareTo()} is consistent with equals.</p>
-	 *
-	 * @param that  byte string to compare to, must not be {@code null}
-	 * @return  a negative, zero, or positive integer if {@code this} is lexicographically
-	 *          lesser than, equal to or greater than {@code that}
-	 *
-	 * @throws NullPointerException  if {@code that} is {@code null}
-	 */
-	@Override
-	public int compareTo(ByteString that) {
-		Objects.requireNonNull(that);
-
-		ByteIterator thisIterator = this.byteIterator();
-		ByteIterator thatIterator = that.byteIterator();
-
-		while (thisIterator.hasNext() && thatIterator.hasNext()) {
-			int thisByte = thisIterator.nextByte() & 0xff;
-			int thatByte = thatIterator.nextByte() & 0xff;
-			int diff = thisByte - thatByte;
-			if (diff != 0) return diff;
+			for (InternEntry entry : oldTable) {
+				while (entry != null) {
+					final InternEntry entry0 = entry; entry = entry0.next;
+					final int index = entry0.hash & mask;
+					entry0.next = newTable[index];
+					newTable[index] = entry0;
+				}
+			}
 		}
 
-		return thisIterator.hasNext()
-				? 1  // !thatIterator.hasNext() => that is shorter
-				: thatIterator.hasNext()
-						? -1  // this is shorter
-						: 0;  // equal length
-	}
-
-	/**
-	 * Returns a byte string formed by a concatenating this byte string with the byte string
-	 * {@code other}.
-	 *
-	 * <p><b>Note:</b> this method uses the non-strict interpretation and therefore
-	 * may (<i>but might not necessarily</i>) preserve unmappable and malformed characters
-	 * occurring in the two strings.</p>
-	 *
-	 * @param other  the byte string to concatenate this byte string with, must not be {@code null}
-	 * @return  this byte string concatenated with {@code other}
-	 *
-	 * @throws NullPointerException  if {@code other} is {@code null}
-	 */
-	public ByteString concat(ByteString other) {
-		if (other.isEmpty()) return this;
-		else if (this.isEmpty()) return other;
-
-		byte[] thisBytes = this.getBytes();
-		byte[] otherBytes = other.getBytes();
-
-		byte[] result = new byte[thisBytes.length + otherBytes.length];
-		System.arraycopy(thisBytes, 0, result, 0, thisBytes.length);
-		System.arraycopy(otherBytes, 0, result, thisBytes.length, otherBytes.length);
-		return ByteString.wrap(result);
-	}
-
-	/**
-	 * Returns a byte string formed by concatenating this byte string with the string
-	 * {@code other}.
-	 *
-	 * <p>This is a convenience method equivalent to</p>
-	 * <pre>
-	 *     concat(ByteString.of(other))
-	 * </pre>
-	 *
-	 * @param other  the string to concatenate with, must not be {@code null}
-	 * @return  this byte string concatenated with {@code other}
-	 *
-	 * @throws  NullPointerException  if {@code other} is {@code null}
-	 */
-	public ByteString concat(String other) {
-		return this.concat(ByteString.of(other));
-	}
-
-	// TODO: add startsWith(ByteString)
-
-	/**
-	 * Returns {@code true} if the first byte of this byte string is {@code b}.
-	 *
-	 * @param b  the byte to compare the first byte of this byte string to
-	 * @return  {@code true} if this byte string starts with {@code b}
-	 */
-	public abstract boolean startsWith(byte b);
-
-	// TODO: add contains(ByteString)
-
-	/**
-	 * Returns {@code true} if the byte string contains the byte {@code b}.
-	 *
-	 * @param b  the byte to search for in the byte string
-	 * @return  {@code true} if this byte string contains {@code b}
-	 */
-	public boolean contains(byte b) {
-		ByteIterator it = byteIterator();
-		while (it.hasNext()) {
-			if (b == it.nextByte()) return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Replaces all occurrences of the byte string {@code target} in this byte string
-	 * with the replacement {@code replacement}.
-	 *
-	 * @param target  the substring to replace, must not be {@code null}
-	 * @param replacement  the replacement, must not be {@code null}
-	 * @return  this byte string with all occurrences of {@code target} replaced
-	 *          by {@code replacement}
-	 *
-	 * @throws NullPointerException  if {@code target} or {@code replacement} is {@code null}
-	 */
-	public ByteString replace(ByteString target, ByteString replacement) {
-		// FIXME: don't go via raw strings
-		return ByteString.fromRaw(this.toRawString().replace(
-				target.toRawString(),
-				replacement.toRawString()));
+		final ByteString value = new ByteString(bytes, hash, string);
+		final int index = hash & (length - 1);
+		INTERN_TABLE[index] = new InternEntry(value, INTERN_TABLE[index]);
+		INTERN_SIZE++;
+		return value;
 	}
 
 }

@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,28 +232,6 @@ public class ByteStringBuilder {
 	}
 
 	/**
-	 * Appends a char sequence {@code charSequence} interpreted as a sequence
-	 * of bytes using the specified {@code Charset}.
-	 *
-	 * @param charSequence  the char sequence to append, must not be {@code null}
-	 * @param charset  the charset to use for encoding, must not be {@code null}
-	 * @return  this builder
-	 *
-	 * @throws NullPointerException  if {@code string} is {@code null}
-	 * @throws IllegalArgumentException  if {@code charset} cannot does not provide encoding
-	 *                                   capability (see {@link Charset#canEncode()})
-	 */
-	public ByteStringBuilder append(CharSequence charSequence, Charset charset) {
-		if (!charset.canEncode()) {
-			throw new IllegalArgumentException("Charset cannot encode: " + charset.name());
-		}
-
-		// FIXME: inefficient, could be done more directly
-		append(ByteString.of(charSequence.toString(), charset));
-		return this;
-	}
-
-	/**
 	 * Appends the char sequence {@code charSequence} interpreted as a sequence
 	 * of bytes using the virtual machine's default charset (see {@link Charset#defaultCharset()}).
 	 *
@@ -262,7 +241,7 @@ public class ByteStringBuilder {
 	 * @throws NullPointerException  if {@code charSequence} is {@code null}
 	 */
 	public ByteStringBuilder append(CharSequence charSequence) {
-		return append(charSequence, Charset.defaultCharset());
+		return append(ByteString.of(charSequence.toString()));
 	}
 
 	/**

@@ -901,7 +901,7 @@ public final class BasicLib {
 							s = Conversions.canonicalRepresentationOf(s);
 
 							if (s instanceof ByteString) {
-								((ByteString) s).writeTo(out);
+								out.write(((ByteString) s).getBytes());
 							}
 							else {
 								throw new LuaRuntimeException("error calling 'print' ('tostring' must return a string to 'print')");

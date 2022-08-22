@@ -18,6 +18,7 @@ package net.sandius.rembulan.parser.ast;
 
 import net.sandius.rembulan.ByteString;
 import net.sandius.rembulan.ByteStringBuilder;
+import net.sandius.rembulan.ByteStringInputStream;
 import net.sandius.rembulan.LuaFormat;
 
 import java.io.BufferedInputStream;
@@ -246,7 +247,7 @@ public class StringLiteral extends Literal {
 
 	private static ByteString stringValueOf(ByteString s) {
 		try {
-			return stringValueOf(s.asInputStream());
+			return stringValueOf(new ByteStringInputStream(s));
 		}
 		catch (IOException ex) {
 			// should not happen!

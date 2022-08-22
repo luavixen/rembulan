@@ -50,7 +50,7 @@ public class OutputStreamIoFile extends IoFile {
 
 	@Override
 	public void write(ByteString s) throws IOException {
-		s.writeTo(out);
+		out.write(s.getBytes());
 	}
 
 	@Override

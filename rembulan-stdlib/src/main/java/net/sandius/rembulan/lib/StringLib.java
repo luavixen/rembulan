@@ -708,7 +708,7 @@ public final class StringLib {
 		boolean changed = false;
 
 		ByteStringBuilder bld = new ByteStringBuilder();
-		ByteIterator it = s.byteIterator();
+		ByteIterator it = s.iterator();
 		while (it.hasNext()) {
 			byte b = it.nextByte();
 			byte c = toLower(b);
@@ -729,7 +729,7 @@ public final class StringLib {
 		boolean changed = false;
 
 		ByteStringBuilder bld = new ByteStringBuilder();
-		ByteIterator it = s.byteIterator();
+		ByteIterator it = s.iterator();
 		while (it.hasNext()) {
 			byte b = it.nextByte();
 			byte c = toUpper(b);
