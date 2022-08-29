@@ -22,6 +22,7 @@ import net.sandius.rembulan.util.ByteSink;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -335,8 +336,12 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 * @throws NullPointerException  if {@code bytes} is null
 	 */
 	public static ByteString copyOf(byte[] bytes) {
-		Objects.requireNonNull(bytes);
-		if (bytes.length == 0) return EMPTY;
+		if (bytes == null) {
+			throw new NullPointerException("Argument 'bytes'");
+		}
+		if (bytes.length == 0) {
+			return EMPTY;
+		}
 		return intern(bytes, null);
 	}
 
@@ -352,8 +357,12 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 * @throws NullPointerException  if {@code bytes} is null
 	 */
 	public static ByteString copyOf(byte[] bytes, int start, int end) {
-		Objects.requireNonNull(bytes);
-		if (start == end) return EMPTY;
+		if (bytes == null) {
+			throw new NullPointerException("Argument 'bytes'");
+		}
+		if (start == end) {
+			return EMPTY;
+		}
 		return intern(Arrays.copyOfRange(bytes, start, end), null);
 	}
 
@@ -382,9 +391,36 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 * @throws NullPointerException  if {@code string} is null
 	 */
 	public static ByteString of(String string) {
-		Objects.requireNonNull(string);
-		if (string.isEmpty()) return EMPTY;
+		if (string == null) {
+			throw new NullPointerException("Argument 'string'");
+		}
+		if (string.isEmpty()) {
+			return EMPTY;
+		}
 		return intern(string.getBytes(StandardCharsets.UTF_8), string);
+	}
+
+	/**
+	 * Returns a byte string containing the provided {@code string} encoded
+	 * with the given {@code charset}.
+	 *
+	 * @param string  string to convert
+	 * @param charset charset to use
+	 * @return  byte string instance
+	 * @throws NullPointerException
+	 *   if either {@code string} or {@code charset} is null
+	 */
+	public static ByteString of(String string, Charset charset) {
+		if (string == null) {
+			throw new NullPointerException("Argument 'string'");
+		}
+		if (charset == null) {
+			throw new NullPointerException("Argument 'charset'");
+		}
+		if (string.isEmpty()) {
+			return EMPTY;
+		}
+		return intern(string.getBytes(charset), null);
 	}
 
 	/**
@@ -396,7 +432,12 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 * @throws NullPointerException  if {@code string} is null
 	 */
 	public static ByteString fromRaw(String string) {
-		Objects.requireNonNull(string);
+		if (string == null) {
+			throw new NullPointerException("Argument 'string'");
+		}
+		if (string.isEmpty()) {
+			return EMPTY;
+		}
 		final char[] chars = string.toCharArray();
 		final byte[] bytes = new byte[chars.length];
 		for (int i = 0, length = bytes.length; i < length; i++) {

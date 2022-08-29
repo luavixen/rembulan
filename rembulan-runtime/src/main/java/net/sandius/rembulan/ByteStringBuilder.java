@@ -20,6 +20,7 @@ package net.sandius.rembulan;
 import net.sandius.rembulan.util.Check;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -232,8 +233,8 @@ public class ByteStringBuilder {
 	}
 
 	/**
-	 * Appends the char sequence {@code charSequence} interpreted as a sequence
-	 * of bytes using the virtual machine's default charset (see {@link Charset#defaultCharset()}).
+	 * Appends the char sequence {@code charSequence} as a sequence of bytes
+	 * encoded with {@link java.nio.charset.StandardCharsets#UTF_8}.
 	 *
 	 * @param charSequence  the char sequence to append, must not be {@code null}
 	 * @return  this builder
@@ -241,7 +242,22 @@ public class ByteStringBuilder {
 	 * @throws NullPointerException  if {@code charSequence} is {@code null}
 	 */
 	public ByteStringBuilder append(CharSequence charSequence) {
-		return append(ByteString.of(charSequence.toString()));
+		return append(charSequence.toString().getBytes(StandardCharsets.UTF_8));
+	}
+
+	/**
+	 * Appends a char sequence {@code charSequence} as a sequence of bytes
+	 * encoded with the specified {@code charset}.
+	 *
+	 * @param charSequence  the char sequence to append, must not be {@code null}
+	 * @param charset  the charset to use for encoding, must not be {@code null}
+	 * @return  this builder
+	 *
+	 * @throws NullPointerException
+	 *   if either {@code string} or {@code charset} is {@code null}
+	 */
+	public ByteStringBuilder append(CharSequence charSequence, Charset charset) {
+		return append(charSequence.toString().getBytes(charset));
 	}
 
 	/**
