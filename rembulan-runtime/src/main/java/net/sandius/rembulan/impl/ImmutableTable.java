@@ -327,7 +327,7 @@ public class ImmutableTable extends Table {
 
 			for (Map.Entry<Object, Object> e : entries.entrySet()) {
 				Object k = e.getKey();
-				tableEntries.put(e.getKey(), new Entry(e.getValue(), entries.getSuccessorOf(k)));
+				tableEntries.put(e.getKey(), new Entry(e.getValue(), entries.getSuccessorKey(k)));
 			}
 			return new ImmutableTable(Collections.unmodifiableMap(tableEntries), entries.getFirstKey());
 		}

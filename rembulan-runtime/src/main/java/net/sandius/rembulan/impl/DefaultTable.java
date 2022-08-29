@@ -98,7 +98,7 @@ public class DefaultTable extends Table {
 	@Override
 	public Object successorKeyOf(Object key) {
 		try {
-			return values.getSuccessorOf(key);
+			return values.getSuccessorKey(key);
 		}
 		catch (NoSuchElementException | NullPointerException ex) {
 			throw new IllegalArgumentException("invalid key to 'next'", ex);
