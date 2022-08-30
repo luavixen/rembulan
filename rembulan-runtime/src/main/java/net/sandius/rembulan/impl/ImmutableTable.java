@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +22,7 @@ import net.sandius.rembulan.Table;
 import net.sandius.rembulan.TableFactory;
 import net.sandius.rembulan.util.TraversableHashMap;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * An immutable table.
@@ -51,24 +49,34 @@ import java.util.Objects;
  */
 public class ImmutableTable extends Table {
 
-	private final Map<Object, Entry> entries;
-	private final Object initialKey;  // null iff the table is empty
+	private final TraversableHashMap<Object, Object> entries;
 
-	static class Entry {
-
-		private final Object value;
-		private final Object nextKey;  // may be null
-
-		private Entry(Object value, Object nextKey) {
-			this.value = Objects.requireNonNull(value);
-			this.nextKey = nextKey;
-		}
-
+	public ImmutableTable(Map<Object, Object> map) {
+		this.entries = new TraversableHashMap<>(map);
 	}
 
-	ImmutableTable(Map<Object, Entry> entries, Object initialKey) {
-		this.entries = Objects.requireNonNull(entries);
-		this.initialKey = initialKey;
+	/**
+	 * Returns an {@code ImmutableTable} based on the contents of the map {@code map}.
+	 *
+	 * <p>For every {@code key}-{@code value} pair in {@code map}, the behaviour of this method
+	 * is similar to that of {@link Table#rawset(Object, Object)}:</p>
+	 * <ul>
+	 *   <li>when {@code value} is <b>nil</b> (i.e., {@code null}), then {@code key}
+	 *     will not have any value associated with it in the resulting table;</li>
+	 *   <li>if {@code key} is <b>nil</b> or <i>NaN</i>, a {@link IllegalArgumentException}
+	 *     is thrown;</li>
+	 *   <li>if {@code key} is a number that has an integer value, it is converted to that integer
+	 *     value.</li>
+	 * </ul>
+	 *
+	 * @param map  the map used to source the contents of the table, must not be {@code null}
+	 * @return  an immutable table based on the contents of {@code map}
+	 *
+	 * @throws NullPointerException  if {@code entries} is {@code null}
+	 * @throws IllegalArgumentException  if {@code map} contains a {@code null} or <i>NaN</i> key
+	 */
+	public static ImmutableTable of(Map<Object, Object> map) {
+		return new ImmutableTable(map);
 	}
 
 	/**
@@ -105,30 +113,6 @@ public class ImmutableTable extends Table {
 	}
 
 	/**
-	 * Returns an {@code ImmutableTable} based on the contents of the map {@code map}.
-	 *
-	 * <p>For every {@code key}-{@code value} pair in {@code map}, the behaviour of this method
-	 * is similar to that of {@link Table#rawset(Object, Object)}:</p>
-	 * <ul>
-	 *   <li>when {@code value} is <b>nil</b> (i.e., {@code null}), then {@code key}
-	 *     will not have any value associated with it in the resulting table;</li>
-	 *   <li>if {@code key} is <b>nil</b> or <i>NaN</i>, a {@link IllegalArgumentException}
-	 *     is thrown;</li>
-	 *   <li>if {@code key} is a number that has an integer value, it is converted to that integer
-	 *     value.</li>
-	 * </ul>
-	 *
-	 * @param map  the map used to source the contents of the table, must not be {@code null}
-	 * @return  an immutable table based on the contents of {@code map}
-	 *
-	 * @throws NullPointerException  if {@code entries} is {@code null}
-	 * @throws IllegalArgumentException  if {@code map} contains a {@code null} or <i>NaN</i> key
-	 */
-	public static ImmutableTable of(Map<Object, Object> map) {
-		return of(map.entrySet());
-	}
-
-	/**
 	 * Returns a new table constructed using the supplied {@code tableFactory}, and copies
 	 * the contents of this table to it.
 	 *
@@ -136,35 +120,30 @@ public class ImmutableTable extends Table {
 	 * @return  a mutable copy of this table
 	 */
 	public Table newCopy(TableFactory tableFactory) {
-		Table t = tableFactory.newTable();
-		for (Object key : entries.keySet()) {
-			Entry e = entries.get(key);
-			t.rawset(key, e.value);
+		Table copy = tableFactory.newTable(0, (entries.size() >>> 1) + (entries.size() >>> 2));
+		for (Map.Entry<Object, Object> entry : entries.entrySet()) {
+			copy.rawset(entry.getKey(), entry.getValue());
 		}
-		return t;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		ImmutableTable that = (ImmutableTable) o;
-		return this.entries.equals(that.entries)
-				&& this.initialKey.equals(that.initialKey);
+		return copy;
 	}
 
 	@Override
 	public int hashCode() {
-		int result = entries.hashCode();
-		result = 31 * result + initialKey.hashCode();
-		return result;
+		return entries.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (other == this) return true;
+		if (other instanceof ImmutableTable) {
+			return entries.equals(((ImmutableTable) other).entries);
+		}
+		return false;
 	}
 
 	@Override
 	public Object rawget(Object key) {
-		key = Conversions.normaliseKey(key);
-		Entry e = entries.get(key);
-		return e != null ? e.value : null;
+		return entries.get(Conversions.normaliseKey(key));
 	}
 
 	/**
@@ -213,24 +192,20 @@ public class ImmutableTable extends Table {
 
 	@Override
 	public Object initialKey() {
-		return initialKey;
+		return entries.getFirstKey();
 	}
 
 	@Override
 	public Object successorKeyOf(Object key) {
 		key = Conversions.normaliseKey(key);
+		if (key == null || (key instanceof Double && Double.isNaN(((Double) key).doubleValue()))) {
+			throw new IllegalArgumentException("invalid key to 'next'");
+		}
 		try {
-			Entry e = entries.get(key);
-			return e.nextKey;
+			return entries.getSuccessorKey(key);
+		} catch (NullPointerException err) {
+			throw new IllegalArgumentException("invalid key to 'next'", err);
 		}
-		catch (NullPointerException ex) {
-			throw new IllegalArgumentException("invalid key to 'next'", ex);
-		}
-	}
-
-	@Override
-	protected void setMode(boolean weakKeys, boolean weakValues) {
-		// no-op
 	}
 
 	/**
@@ -240,27 +215,11 @@ public class ImmutableTable extends Table {
 
 		private final TraversableHashMap<Object, Object> entries;
 
-		private static void checkKey(Object key) {
-			if (key == null || (key instanceof Double && Double.isNaN(((Double) key).doubleValue()))) {
-				throw new IllegalArgumentException("invalid table key: " + Conversions.toHumanReadableString(key));
-			}
-		}
-
-		private Builder(TraversableHashMap<Object, Object> entries) {
-			this.entries = Objects.requireNonNull(entries);
-		}
-
 		/**
 		 * Constructs a new empty builder.
 		 */
 		public Builder() {
-			this(new TraversableHashMap<>());
-		}
-
-		private static <K, V> TraversableHashMap<K, V> mapCopy(TraversableHashMap<K, V> map) {
-			TraversableHashMap<K, V> result = new TraversableHashMap<>();
-			result.putAll(map);
-			return result;
+			entries = new TraversableHashMap<>();
 		}
 
 		/**
@@ -271,7 +230,7 @@ public class ImmutableTable extends Table {
 		 * @throws  NullPointerException  if {@code builder} is {@code null}
 		 */
 		public Builder(Builder builder) {
-			this(mapCopy(builder.entries));
+			entries = new TraversableHashMap<>(builder.entries);
 		}
 
 		/**
@@ -297,15 +256,14 @@ public class ImmutableTable extends Table {
 		 */
 		public Builder add(Object key, Object value) {
 			key = Conversions.normaliseKey(key);
-			checkKey(key);
-
+			if (key == null || (key instanceof Double && Double.isNaN(((Double) key).doubleValue()))) {
+				throw new IllegalArgumentException("invalid table key: " + Conversions.toHumanReadableString(key));
+			}
 			if (value != null) {
 				entries.put(key, value);
-			}
-			else {
+			} else {
 				entries.remove(key);
 			}
-
 			return this;
 		}
 
@@ -323,13 +281,7 @@ public class ImmutableTable extends Table {
 		 * @return  a new immutable table
 		 */
 		public ImmutableTable build() {
-			Map<Object, Entry> tableEntries = new HashMap<>();
-
-			for (Map.Entry<Object, Object> e : entries.entrySet()) {
-				Object k = e.getKey();
-				tableEntries.put(e.getKey(), new Entry(e.getValue(), entries.getSuccessorKey(k)));
-			}
-			return new ImmutableTable(Collections.unmodifiableMap(tableEntries), entries.getFirstKey());
+			return new ImmutableTable(entries);
 		}
 
 	}

@@ -1448,7 +1448,7 @@ object BasicFragments extends FragmentBundle with FragmentExpectations with OneL
   NextNonexistentKey in BasicContext failsWith (classOf[IllegalArgumentException], "invalid key to 'next'")
 
   val NextNaNKey = fragment ("NextNaNKey") {
-    """next({}, "0/0")
+    """next({}, 0/0)
     """
   }
   NextNaNKey in BasicContext failsWith (classOf[IllegalArgumentException], "invalid key to 'next'")
