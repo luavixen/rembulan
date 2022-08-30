@@ -95,6 +95,12 @@ public final class BasicLib {
 	public static final ByteString MT_PAIRS = ByteString.constOf("__pairs");
 
 	/**
+	 * The metatable key {@code "__ipairs"}. When defined, customises the behaviour
+	 * of {@link #ipairs() <code>ipairs</code>}.
+	 */
+	public static final ByteString MT_IPAIRS = ByteString.constOf("__ipairs");
+
+	/**
 	 * The metatable key {@code "__tostring"}. When defined, customises the behaviour
 	 * of {@link #tostring() <code>tostring</code>}.
 	 */
@@ -112,6 +118,7 @@ public final class BasicLib {
 	static final LuaFunction COLLECTGARBAGE = new CollectGarbage();
 	static final LuaFunction ERROR = new Error();
 	static final LuaFunction GETMETATABLE = new GetMetatable();
+	static final LuaFunction INEXT = new INext();
 	static final LuaFunction IPAIRS = new IPairs();
 	static final LuaFunction NEXT = new Next();
 	static final LuaFunction PAIRS = new Pairs();
@@ -989,8 +996,6 @@ public final class BasicLib {
 
 	static class INext extends AbstractLibFunction {
 
-		public static final INext INSTANCE = new INext();
-
 		@Override
 		protected String name() {
 			return "inext";
@@ -1043,23 +1048,20 @@ public final class BasicLib {
 
 		@Override
 		protected void invoke(ExecutionContext context, ArgumentIterator args) throws ResolvedControlThrowable {
-			Table t = args.nextTable();
-			Object metamethod = Metatables.getMetamethod(context, MT_PAIRS, t);
+			Object value = args.nextAny();
+			Object metamethod = Metatables.getMetamethod(context, MT_PAIRS, value);
 
 			if (metamethod != null) {
 				try {
-					Dispatch.call(context, metamethod, t);
-				}
-				catch (UnresolvedControlThrowable ct) {
+					Dispatch.call(context, metamethod, value);
+				} catch (UnresolvedControlThrowable ct) {
 					throw ct.resolve(this, null);
 				}
-
 				ReturnBuffer rbuf = context.getReturnBuffer();
 				rbuf.setTo(rbuf.get0(), rbuf.get1(), rbuf.get2());
-			}
-			else {
-				ReturnBuffer rbuf = context.getReturnBuffer();
-				rbuf.setTo(NEXT, t, null);
+			} else {
+				args.goTo(0);
+				context.getReturnBuffer().setTo(NEXT, args.nextTable(), null);
 			}
 		}
 
@@ -1080,8 +1082,21 @@ public final class BasicLib {
 
 		@Override
 		protected void invoke(ExecutionContext context, ArgumentIterator args) throws ResolvedControlThrowable {
-			Table t = args.nextTable();
-			context.getReturnBuffer().setTo(INext.INSTANCE, t, 0L);
+			Object value = args.nextAny();
+			Object metamethod = Metatables.getMetamethod(context, MT_IPAIRS, value);
+
+			if (metamethod != null) {
+				try {
+					Dispatch.call(context, metamethod, value);
+				} catch (UnresolvedControlThrowable ct) {
+					throw ct.resolve(this, null);
+				}
+				ReturnBuffer rbuf = context.getReturnBuffer();
+				rbuf.setTo(rbuf.get0(), rbuf.get1(), rbuf.get2());
+			} else {
+				args.goTo(0);
+				context.getReturnBuffer().setTo(INEXT, args.nextTable(), 0L);
+			}
 		}
 
 	}

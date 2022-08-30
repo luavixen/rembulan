@@ -1488,7 +1488,7 @@ object BasicFragments extends FragmentBundle with FragmentExpectations with OneL
     """pairs()
     """
   }
-  PairsNoArg in BasicContext failsWith (classOf[IllegalArgumentException], "bad argument #1 to 'pairs' (table expected, got no value)")
+  PairsNoArg in BasicContext failsWith (classOf[IllegalArgumentException], "bad argument #1 to 'pairs' (value expected)")
 
   val IPairsOnList = fragment ("IPairsOnList") {
     """local l = {5, 4, 3, 2}
@@ -1550,7 +1550,7 @@ object BasicFragments extends FragmentBundle with FragmentExpectations with OneL
     """ipairs()
     """
   }
-  IPairsNoArg in BasicContext failsWith (classOf[IllegalArgumentException], "bad argument #1 to 'ipairs' (table expected, got no value)")
+  IPairsNoArg in BasicContext failsWith (classOf[IllegalArgumentException], "bad argument #1 to 'ipairs' (value expected)")
 
   val SelectCount = fragment ("SelectCount") {
     """return select('#', 3, 2, x)
