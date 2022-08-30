@@ -22,6 +22,8 @@ import net.sandius.rembulan.Table;
 import net.sandius.rembulan.TableFactory;
 import net.sandius.rembulan.util.TraversableHashMap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,7 +36,7 @@ import java.util.Map;
  * <p>The table has no metatable.</p>
  *
  * <p>To instantiate a new {@code ImmutableTable}, use one of the static constructor methods
- * (e.g., {@link #of(Iterable)}), or a {@link ImmutableTable.Builder} as follows:</p>
+ * (e.g., {@link #of(Map)} )}), or a {@link ImmutableTable.Builder} as follows:</p>
  *
  * <pre>
  *     ImmutableTable t = new ImmutableTable.Builder()
@@ -49,10 +51,14 @@ import java.util.Map;
  */
 public class ImmutableTable extends Table {
 
-	private final TraversableHashMap<Object, Object> entries;
+	private final TraversableHashMap<Object, Object> values;
+
+	private ImmutableTable(TraversableHashMap<Object, Object> values) {
+		this.values = values;
+	}
 
 	public ImmutableTable(Map<Object, Object> map) {
-		this.entries = new TraversableHashMap<>(map);
+		this.values = new TraversableHashMap<>(map);
 	}
 
 	/**
@@ -80,48 +86,15 @@ public class ImmutableTable extends Table {
 	}
 
 	/**
-	 * Returns an {@code ImmutableTable} based on the contents of the sequence of
-	 * map entries {@code entries}.
-	 *
-	 * <p>For every {@code key}-{@code value} pair in {@code entries}, the behaviour of this
-	 * method is similar to that of {@link Table#rawset(Object, Object)}:</p>
-	 * <ul>
-	 *   <li>when {@code value} is <b>nil</b> (i.e., {@code null}), then {@code key}
-	 *     will not have any value associated with it in the resulting table;</li>
-	 *   <li>if {@code key} is <b>nil</b> or <i>NaN</i>, a {@link IllegalArgumentException}
-	 *     is thrown;</li>
-	 *   <li>if {@code key} is a number that has an integer value, it is converted to that integer
-	 *     value.</li>
-	 * </ul>
-	 *
-	 * <p>Keys may occur multiple times in {@code entries} &mdash; only the last occurrence
-	 * counts.</p>
-	 *
-	 * @param entries  the map entries, must not be {@code null}
-	 * @return  an immutable table based on the contents of {@code entries}
-	 *
-	 * @throws NullPointerException  if {@code entries} is {@code null}
-	 * @throws IllegalArgumentException  if {@code entries} contains an entry with
-	 *                                   a {@code null} or <i>NaN</i> key
-	 */
-	public static ImmutableTable of(Iterable<Map.Entry<Object, Object>> entries) {
-		Builder builder = new Builder();
-		for (Map.Entry<Object, Object> entry : entries) {
-			builder.add(entry.getKey(), entry.getValue());
-		}
-		return builder.build();
-	}
-
-	/**
-	 * Returns a new table constructed using the supplied {@code tableFactory}, and copies
+	 * Returns a new table constructed using the supplied {@code factory}, and copies
 	 * the contents of this table to it.
 	 *
-	 * @param tableFactory  the table factory to use, must not be {@code null}
+	 * @param factory  the table factory to use, must not be {@code null}
 	 * @return  a mutable copy of this table
 	 */
-	public Table newCopy(TableFactory tableFactory) {
-		Table copy = tableFactory.newTable(0, (entries.size() >>> 1) + (entries.size() >>> 2));
-		for (Map.Entry<Object, Object> entry : entries.entrySet()) {
+	public Table newCopy(TableFactory factory) {
+		Table copy = factory.newTable(0, values.size() + (values.size() >>> 1));
+		for (Map.Entry<Object, Object> entry : values.entrySet()) {
 			copy.rawset(entry.getKey(), entry.getValue());
 		}
 		return copy;
@@ -129,21 +102,21 @@ public class ImmutableTable extends Table {
 
 	@Override
 	public int hashCode() {
-		return entries.hashCode();
+		return values.hashCode();
 	}
 
 	@Override
 	public boolean equals(Object other) {
 		if (other == this) return true;
 		if (other instanceof ImmutableTable) {
-			return entries.equals(((ImmutableTable) other).entries);
+			return values.equals(((ImmutableTable) other).values);
 		}
 		return false;
 	}
 
 	@Override
 	public Object rawget(Object key) {
-		return entries.get(Conversions.normaliseKey(key));
+		return values.get(Conversions.normaliseKey(key));
 	}
 
 	/**
@@ -192,7 +165,7 @@ public class ImmutableTable extends Table {
 
 	@Override
 	public Object initialKey() {
-		return entries.getFirstKey();
+		return values.getFirstKey();
 	}
 
 	@Override
@@ -202,7 +175,7 @@ public class ImmutableTable extends Table {
 			throw new IllegalArgumentException("invalid key to 'next'");
 		}
 		try {
-			return entries.getSuccessorKey(key);
+			return values.getSuccessorKey(key);
 		} catch (NullPointerException err) {
 			throw new IllegalArgumentException("invalid key to 'next'", err);
 		}
@@ -213,13 +186,23 @@ public class ImmutableTable extends Table {
 	 */
 	public static class Builder {
 
-		private final TraversableHashMap<Object, Object> entries;
+		private static final class Entry {
+			private final Object key;
+			private final Object value;
+
+			private Entry(Object key, Object value) {
+				this.key = key;
+				this.value = value;
+			}
+		}
+
+		private final List<Entry> entries;
 
 		/**
 		 * Constructs a new empty builder.
 		 */
 		public Builder() {
-			entries = new TraversableHashMap<>();
+			this.entries = new ArrayList<>();
 		}
 
 		/**
@@ -230,7 +213,7 @@ public class ImmutableTable extends Table {
 		 * @throws  NullPointerException  if {@code builder} is {@code null}
 		 */
 		public Builder(Builder builder) {
-			entries = new TraversableHashMap<>(builder.entries);
+			this.entries = new ArrayList<>(builder.entries);
 		}
 
 		/**
@@ -255,14 +238,15 @@ public class ImmutableTable extends Table {
 		 * @throws IllegalArgumentException  when {@code key} is {@code null} or a <i>NaN</i>
 		 */
 		public Builder add(Object key, Object value) {
-			key = Conversions.normaliseKey(key);
-			if (key == null || (key instanceof Double && Double.isNaN(((Double) key).doubleValue()))) {
-				throw new IllegalArgumentException("invalid table key: " + Conversions.toHumanReadableString(key));
-			}
 			if (value != null) {
-				entries.put(key, value);
-			} else {
-				entries.remove(key);
+				key = Conversions.normaliseKey(key);
+				if (key == null) {
+					throw new IllegalArgumentException("table index is nil");
+				}
+				if (key instanceof Double && Double.isNaN(((Double) key).doubleValue())) {
+					throw new IllegalArgumentException("table index is NaN");
+				}
+				entries.add(new Entry(key, value));
 			}
 			return this;
 		}
@@ -281,7 +265,13 @@ public class ImmutableTable extends Table {
 		 * @return  a new immutable table
 		 */
 		public ImmutableTable build() {
-			return new ImmutableTable(entries);
+			TraversableHashMap<Object, Object> values =
+					new TraversableHashMap<>(entries.size() + (entries.size() >>> 1));
+
+			for (Entry entry : entries)
+				values.put(entry.key, entry.value);
+
+			return new ImmutableTable(values);
 		}
 
 	}
