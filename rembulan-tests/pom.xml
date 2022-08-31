@@ -42,6 +42,7 @@
   </scm>
 
   <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
     <scala.binary.version>2.11</scala.binary.version>
     <scala.version>${scala.binary.version}.0</scala.version>
   </properties>

@@ -41,6 +41,10 @@
     <url>https://github.com/luavixen/rembulan/tree/main</url>
   </scm>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
 
     <dependency>

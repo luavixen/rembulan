@@ -121,16 +121,15 @@ hello world!
 
 ### Using Rembulan from Maven
 
-There are no releases yet, but snapshot artifacts are published to the Sonatype OSSRH Snapshot Repository.
+There are no releases yet, but snapshot artifacts are published to my personal Maven repository.
 To use the snapshot artifacts, add the following configuration to your `pom.xml`:
 
 ```xml
 <repositories>
   <repository>
-    <id>sonatype-ossrh-snapshots</id>
-    <name>Sonatype OSSRH (Snapshots)</name>
-    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-    <snapshots />
+    <id>foxgirl-snapshots</id>
+    <name>Lua's Maven Repository</name>
+    <url>https://maven.foxgirl.dev/snapshots</url>
   </repository>
 </repositories>
 ```

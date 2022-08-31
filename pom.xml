@@ -35,6 +35,10 @@
     <url>https://github.com/luavixen/rembulan/tree/main</url>
   </scm>
 
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <modules>
     <module>rembulan-parent</module>
     <module>rembulan-runtime</module>
@@ -47,17 +51,12 @@
     <module>rembulan-standalone</module>
   </modules>
 
-  <!--
   <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
     <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <id>foxgirl-snapshots</id>
+      <name>Lua's Maven Repository</name>
+      <url>https://maven.foxgirl.dev/snapshots</url>
     </repository>
   </distributionManagement>
-  -->
 
 </project>
