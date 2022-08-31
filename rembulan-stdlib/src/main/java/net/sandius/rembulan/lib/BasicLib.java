@@ -1060,7 +1060,7 @@ public final class BasicLib {
 				ReturnBuffer rbuf = context.getReturnBuffer();
 				rbuf.setTo(rbuf.get0(), rbuf.get1(), rbuf.get2());
 			} else {
-				args.goTo(0);
+				args.move(0);
 				context.getReturnBuffer().setTo(NEXT, args.nextTable(), null);
 			}
 		}
@@ -1094,7 +1094,7 @@ public final class BasicLib {
 				ReturnBuffer rbuf = context.getReturnBuffer();
 				rbuf.setTo(rbuf.get0(), rbuf.get1(), rbuf.get2());
 			} else {
-				args.goTo(0);
+				args.move(0);
 				context.getReturnBuffer().setTo(INEXT, args.nextTable(), 0L);
 			}
 		}

@@ -26,127 +26,6 @@ public final class Check {
 	}
 
 	/**
-	 * Throws an {@link IllegalArgumentException} if {@code a != b}; otherwise, returns
-	 * {@code a}.
-	 *
-	 * @param a  the first argument, may be {@code null}
-	 * @param b  the second argument, may be {@code null}
-	 * @param <T>  the type of {@code a} and {@code b}
-	 * @return  {@code a} if {@code a == b}
-	 *
-	 * @throws IllegalArgumentException  if {@code a != b}
-	 */
-	public static <T> T isEq(T a, T b) {
-		if (a != b) {
-			throw new IllegalArgumentException("argument " + a + " is not equal to " + b);
-		}
-		return a;
-	}
-
-	/**
-	 * Throws an {@link IllegalArgumentException} if {@code a != b}; otherwise, returns
-	 * {@code a}.
-	 *
-	 * @param a  the first argument
-	 * @param b  the second argument
-	 * @return  {@code a} if {@code a == b}
-	 *
-	 * @throws IllegalArgumentException  if {@code a != b}
-	 */
-	public static int isEq(int a, int b) {
-		if (a != b) {
-			throw new IllegalArgumentException("integer " + a + " is not equal to " + b);
-		}
-		return a;
-	}
-
-	/**
-	 * Throws an {@link IllegalArgumentException} if the integer {@code n} is outside of
-	 * the range [{@code min}, {@code max}] (inclusive); otherwise, returns {@code n}.
-	 *
-	 * @param n  the integer to test for inclusion in the range
-	 * @param min  minimum
-	 * @param max  maximum
-	 * @return  {@code n} if {@code n >= min && n <= max}
-	 *
-	 * @throws IllegalArgumentException  if {@code n < min || n > max}
-	 */
-	public static int inRange(int n, int min, int max) {
-		if (n < min && n > max) {
-			throw new IllegalArgumentException("integer " + n + " out of range: [" + min + ", " + max + "]");
-		}
-		return n;
-	}
-
-	/**
-	 * Throws an {@link IllegalArgumentException} if the integer {@code n} is not lesser than
-	 * {@code limit}; otherwise, returns {@code n}.
-	 *
-	 * @param n  the integer to be tested
-	 * @param limit  the limit
-	 * @return  {@code n} if {@code n < limit}
-	 *
-	 * @throws IllegalArgumentException  if {@code n >= limit}
-	 */
-	public static int lt(int n, int limit) {
-		if (!(n < limit)) {
-			throw new IllegalArgumentException("integer " + n + " is not lesser than " + limit);
-		}
-		return n;
-	}
-
-	/**
-	 * Throws an {@link IllegalArgumentException} if the long {@code n} is not lesser than
-	 * {@code limit}; otherwise, returns {@code n}.
-	 *
-	 * @param n  the long to be tested
-	 * @param limit  the limit
-	 * @return  {@code n} if {@code n < limit}
-	 *
-	 * @throws IllegalArgumentException  if {@code n >= limit}
-	 */
-	public static long lt(long n, long limit) {
-		if (!(n < limit)) {
-			throw new IllegalArgumentException("long " + n + " is not lesser than " + limit);
-		}
-		return n;
-	}
-
-	/**
-	 * Throws an {@link IllegalArgumentException} if the integer {@code n} is not greater than
-	 * {@code limit}; otherwise, returns {@code n}.
-	 *
-	 * @param n  the integer to be tested
-	 * @param limit  the limit
-	 * @return  {@code n} if {@code n > limit}
-	 *
-	 * @throws IllegalArgumentException  if {@code n <= limit}
-	 */
-	public static int gt(int n, int limit) {
-		if (!(n > limit)) {
-			throw new IllegalArgumentException("integer " + n + " is not greater than " + limit);
-		}
-		return n;
-	}
-
-	/**
-	 * Throws an {@link IllegalArgumentException} if the long {@code n} is not greater than
-	 * {@code limit}; otherwise, returns {@code n}.
-	 *
-	 * @param n  the long to be tested
-	 * @param limit  the limit
-	 * @return  {@code n} if {@code n > limit}
-	 *
-	 * @throws IllegalArgumentException  if {@code n <= limit}
-	 */
-	public static long gt(long n, long limit) {
-		if (!(n > limit)) {
-			throw new IllegalArgumentException("long " + n + " is not greater than " + limit);
-		}
-		return n;
-	}
-
-	/**
 	 * Throws an {@link IllegalArgumentException} if {@code b} is {@code false}.
 	 *
 	 * @param b  boolean value to test
@@ -173,6 +52,42 @@ public final class Check {
 	}
 
 	/**
+	 * Throws an {@link IllegalArgumentException} if the integer {@code n} is outside
+	 * the range [{@code min}, {@code max}] (inclusive); otherwise, returns {@code n}.
+	 *
+	 * @param n  the integer to test for inclusion in the range
+	 * @param min  minimum
+	 * @param max  maximum
+	 * @return  {@code n} if {@code n >= min && n <= max}
+	 *
+	 * @throws IllegalArgumentException  if {@code n < min || n > max}
+	 */
+	public static int inRange(int n, int min, int max) {
+		if (n < min && n > max) {
+			throw new IllegalArgumentException("integer " + n + " out of range: [" + min + ", " + max + "]");
+		}
+		return n;
+	}
+
+	/**
+	 * Throws an {@link IllegalArgumentException} if the long {@code n} is outside
+	 * the range [{@code min}, {@code max}] (inclusive); otherwise, returns {@code n}.
+	 *
+	 * @param n  the long to test for inclusion in the range
+	 * @param min  minimum
+	 * @param max  maximum
+	 * @return  {@code n} if {@code n >= min && n <= max}
+	 *
+	 * @throws IllegalArgumentException  if {@code n < min || n > max}
+	 */
+	public static long inRange(long n, long min, long max) {
+		if (n < min && n > max) {
+			throw new IllegalArgumentException("long " + n + " out of range: [" + min + ", " + max + "]");
+		}
+		return n;
+	}
+
+	/**
 	 * Throws an {@link IllegalArgumentException} if the integer {@code n} is negative;
 	 * otherwise, returns {@code n}.
 	 *
@@ -182,7 +97,10 @@ public final class Check {
 	 * @throws IllegalArgumentException  if {@code n < 0}
 	 */
 	public static int nonNegative(int n) {
-		return gt(n, -1);
+		if (n < 0) {
+			throw new IllegalArgumentException("integer " + n + " is negative");
+		}
+		return n;
 	}
 
 	/**
@@ -195,7 +113,10 @@ public final class Check {
 	 * @throws IllegalArgumentException  if {@code n < 0}
 	 */
 	public static long nonNegative(long n) {
-		return gt(n, -1);
+		if (n < 0) {
+			throw new IllegalArgumentException("long " + n + " is negative");
+		}
+		return n;
 	}
 
 	/**
@@ -208,7 +129,10 @@ public final class Check {
 	 * @throws IllegalArgumentException  if {@code n <= 0}
 	 */
 	public static int positive(int n) {
-		return gt(n, 0);
+		if (n <= 0) {
+			throw new IllegalArgumentException("integer " + n + " is not positive");
+		}
+		return n;
 	}
 
 	/**
@@ -221,7 +145,10 @@ public final class Check {
 	 * @throws IllegalArgumentException  if {@code n <= 0}
 	 */
 	public static long positive(long n) {
-		return gt(n, 0);
+		if (n <= 0) {
+			throw new IllegalArgumentException("long " + n + " is not positive");
+		}
+		return n;
 	}
 
 	/**

@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +32,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-import static net.sandius.rembulan.LuaFormat.TYPENAME_FUNCTION;
-import static net.sandius.rembulan.LuaFormat.TYPENAME_NUMBER;
-import static net.sandius.rembulan.LuaFormat.TYPENAME_STRING;
-import static net.sandius.rembulan.LuaFormat.TYPENAME_TABLE;
-import static net.sandius.rembulan.LuaFormat.TYPENAME_THREAD;
-import static net.sandius.rembulan.LuaFormat.TYPENAME_USERDATA;
+import static net.sandius.rembulan.LuaFormat.*;
 
 /**
  * An iterator over arguments passed to a function.
@@ -54,8 +50,6 @@ import static net.sandius.rembulan.LuaFormat.TYPENAME_USERDATA;
  */
 public class ArgumentIterator implements Iterator<Object> {
 
-	// TODO: clean up!
-
 	private final ValueTypeNamer namer;
 
 	private final String name;
@@ -69,8 +63,23 @@ public class ArgumentIterator implements Iterator<Object> {
 		this.index = Check.nonNegative(index);
 	}
 
-	ArgumentIterator(ValueTypeNamer namer, String name, Object[] args) {
-		this(namer, name, args, 0);
+	/**
+	 * Constructs an argument iterator over the argument array {@code args} that uses
+	 * {@code metatableProvider} to access value names (by looking up their
+	 * {@link BasicLib#MT_NAME <code>"__name"</code>} metatable field), and uses
+	 * {@code name} as the name of the function for error reporting.
+	 *
+	 * <p>This constructor uses the argument array {@code args} directly.</p>
+	 *
+	 * @param metatableProvider  the metatable provider, must not be {@code null}
+	 * @param name  the function name, must not be {@code null}
+	 * @param args  the argument list, must not be {@code null}
+	 *
+	 * @throws NullPointerException  if {@code metatableProvider}, {@code name} or {@code args}
+	 *                               is {@code null}
+	 */
+	ArgumentIterator(MetatableProvider metatableProvider, String name, Object[] args) {
+		this(new NameMetamethodValueTypeNamer(metatableProvider), name, args, 0);
 	}
 
 	/**
@@ -90,10 +99,7 @@ public class ArgumentIterator implements Iterator<Object> {
 	 *                               is {@code null}
 	 */
 	public static ArgumentIterator of(MetatableProvider metatableProvider, String name, Object[] args) {
-		return new ArgumentIterator(
-				new NameMetamethodValueTypeNamer(metatableProvider),
-				name,
-				Arrays.copyOf(args, args.length));
+		return new ArgumentIterator(metatableProvider, name, args.clone());
 	}
 
 	@Override
@@ -103,8 +109,7 @@ public class ArgumentIterator implements Iterator<Object> {
 
 	@Override
 	public Object next() {
-		Object o = peek();
-		skip();
+		Object o = peek(); skip();
 		return o;
 	}
 
@@ -152,13 +157,11 @@ public class ArgumentIterator implements Iterator<Object> {
 		return Math.max(args.length - index, 0);
 	}
 
-
 	/**
 	 * Skips the next argument.
 	 */
 	public void skip() {
-		index += 1;
-		if (index < 0) {
+		if (++index < 0) {
 			throw new IllegalStateException("index overflow");
 		}
 	}
@@ -175,7 +178,7 @@ public class ArgumentIterator implements Iterator<Object> {
 	 *
 	 * @throws IllegalArgumentException  if {@code index} is negative
 	 */
-	public void goTo(int index) {
+	public void move(int index) {
 		this.index = Check.nonNegative(index);
 	}
 
@@ -184,7 +187,7 @@ public class ArgumentIterator implements Iterator<Object> {
 	 * list.
 	 */
 	public void rewind() {
-		goTo(0);
+		move(0);
 	}
 
 	/**
@@ -211,10 +214,6 @@ public class ArgumentIterator implements Iterator<Object> {
 				: new Object[0];
 	}
 
-	private BadArgumentException badArgument(Throwable cause) {
-		return new BadArgumentException(index + 1, name, cause);
-	}
-
 	/**
 	 * Returns the argument at current position, without incrementing the current position
 	 * afterwards.
@@ -230,21 +229,16 @@ public class ArgumentIterator implements Iterator<Object> {
 		if (index < args.length) {
 			return args[index];
 		}
-		else {
-			throw new NoSuchElementException("value expected");
-		}
+		throw new NoSuchElementException("value expected");
 	}
 
-	private Object peek(String expectedType) {
-		try {
-			return peek();
+	private Object peek(String type) {
+		if (index < args.length) {
+			return args[index];
 		}
-		catch (NoSuchElementException ex) {
-			throw new UnexpectedArgumentException(expectedType, "no value");
-		}
+		throw new UnexpectedArgumentException(type, "no value");
 	}
 
-	// guaranteed not to return null
 	private Number peekNumber() {
 		Object arg = peek(TYPENAME_NUMBER.toString());
 		Number n = Conversions.numericalValueOf(arg);
@@ -254,6 +248,10 @@ public class ArgumentIterator implements Iterator<Object> {
 		else {
 			throw new UnexpectedArgumentException(TYPENAME_NUMBER.toString(), namer.typeNameOf(arg).toString());
 		}
+	}
+
+	private BadArgumentException badArgument(Throwable cause) {
+		return new BadArgumentException(index + 1, name, cause);
 	}
 
 	/**

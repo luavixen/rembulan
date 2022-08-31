@@ -394,9 +394,9 @@ public final class TableLib {
 
 						// process arguments
 						sep = args.nextOptionalString(ByteString.empty());
-						args.goTo(2);
+						args.move(2);
 						i = args.nextOptionalInteger(1);
-						args.goTo(3);
+						args.move(3);
 						j = args.nextOptionalInteger(len);
 
 						// don't need the args any more
@@ -759,14 +759,14 @@ public final class TableLib {
 			if (args.size() < 2) {
 				throw new BadArgumentException(2, name(), "number expected, got no value");
 			}
-			args.goTo(1);
+			args.move(1);
 			long f = args.nextInteger();
 			long e = args.nextInteger();
 			long t = args.nextInteger();
 
 			final Table dest = args.nextOptionalTable(null);
 
-			args.goTo(0);
+			args.move(0);
 			final Table a1 = args.nextTable();
 			final Table a2 = dest != null ? dest : a1;
 

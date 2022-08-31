@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +35,6 @@ public abstract class AbstractLibFunction extends AbstractFunctionAnyArg {
 	 */
 	protected abstract String name();
 
-	@Override
-	public void invoke(ExecutionContext context, Object[] args) throws ResolvedControlThrowable {
-		invoke(context, ArgumentIterator.of(context, name(), args));
-	}
-
 	/**
 	 * Invokes the function in the context {@code context} with arguments passed in
 	 * the iterator {@code args}.
@@ -57,6 +53,11 @@ public abstract class AbstractLibFunction extends AbstractFunctionAnyArg {
 	 * @throws ResolvedControlThrowable  if the call initiates a non-local control change
 	 */
 	protected abstract void invoke(ExecutionContext context, ArgumentIterator args) throws ResolvedControlThrowable;
+
+	@Override
+	public void invoke(ExecutionContext context, Object[] args) throws ResolvedControlThrowable {
+		invoke(context, new ArgumentIterator(context, name(), args));
+	}
 
 	@Override
 	public void resume(ExecutionContext context, Object suspendedState) throws ResolvedControlThrowable {

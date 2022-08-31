@@ -795,9 +795,9 @@ public final class DebugLib {
 
 		@Override
 		protected void invoke(ExecutionContext context, ArgumentIterator args) throws ResolvedControlThrowable {
-			args.goTo(1);
+			args.move(1);
 			int n = args.nextInt();
-			args.goTo(0);
+			args.move(0);
 			LuaFunction f = args.nextFunction();
 
 			UpvalueRef uvRef = UpvalueRef.find(f, n - 1);
@@ -829,9 +829,9 @@ public final class DebugLib {
 		@Override
 		protected void invoke(ExecutionContext context, ArgumentIterator args) throws ResolvedControlThrowable {
 			// read f1, n1
-			args.goTo(1);
+			args.move(1);
 			int n1 = args.nextInt();
-			args.goTo(0);
+			args.move(0);
 			LuaFunction f1 = args.nextFunction();
 
 			UpvalueRef uvRef1 = UpvalueRef.find(f1, n1 - 1);
@@ -840,9 +840,9 @@ public final class DebugLib {
 			}
 
 			// read f2, n2
-			args.goTo(3);
+			args.move(3);
 			int n2 = args.nextInt();
-			args.goTo(2);
+			args.move(2);
 			LuaFunction f2 = args.nextFunction();
 
 			UpvalueRef uvRef2 = UpvalueRef.find(f2, n2 - 1);
