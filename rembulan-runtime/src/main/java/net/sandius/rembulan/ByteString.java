@@ -87,7 +87,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 * @return  newly created byte array
 	 */
 	public byte[] getBytes() {
-		return Arrays.copyOf(data, data.length);
+		return data.clone();
 	}
 
 	public int indexOf(byte b, int start) {
@@ -342,7 +342,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 		if (bytes.length == 0) {
 			return EMPTY;
 		}
-		return intern(bytes, null);
+		return intern(bytes.clone(), null);
 	}
 
 	/**
