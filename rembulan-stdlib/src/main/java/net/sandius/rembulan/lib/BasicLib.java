@@ -1574,6 +1574,9 @@ public final class BasicLib {
 
 	static class CollectGarbage extends AbstractLibFunction {
 
+		private static final ByteString OPT_COLLECT = ByteString.constOf("collect");
+		private static final ByteString OPT_ISRUNNING = ByteString.constOf("isrunning");
+
 		@Override
 		protected String name() {
 			return "collectgarbage";
@@ -1581,10 +1584,17 @@ public final class BasicLib {
 
 		@Override
 		protected void invoke(ExecutionContext context, ArgumentIterator args) throws ResolvedControlThrowable {
-			if (args.hasNext()) {
-				throw new UnsupportedOperationException();  // TODO
+			ByteString opt = args.nextOptionalString(null);
+			if (OPT_COLLECT.equals(opt) || opt == null) {
+				System.gc();
+				context.getReturnBuffer().setTo(0L);
+				return;
 			}
-			// TODO
+			if (OPT_ISRUNNING.equals(opt)) {
+				context.getReturnBuffer().setTo(true);
+				return;
+			}
+			throw new BadArgumentException(1, name(), "invalid option '" + opt + "'");
 		}
 
 	}
