@@ -1,0 +1,14 @@
+dev.foxgirl.rembulan.compiler
+dev.foxgirl.rembulan.compiler.analysis
+dev.foxgirl.rembulan.compiler.analysis.types
+dev.foxgirl.rembulan.compiler.gen
+dev.foxgirl.rembulan.compiler.gen.asm
+dev.foxgirl.rembulan.compiler.gen.asm.helpers
+dev.foxgirl.rembulan.compiler.ir
+dev.foxgirl.rembulan.compiler.tf
+dev.foxgirl.rembulan.compiler.util
+dev.foxgirl.rembulan.parser
+dev.foxgirl.rembulan.parser.analysis
+dev.foxgirl.rembulan.parser.ast
+dev.foxgirl.rembulan.parser.ast.util
+dev.foxgirl.rembulan.parser.util
