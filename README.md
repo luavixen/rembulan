@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/mjanicek/rembulan.svg?branch=master)](https://travis-ci.org/mjanicek/rembulan)
-
 # Rembulan
 
 (*Rembulan* is Javanese/Indonesian for *Moon*.)
@@ -22,7 +20,7 @@ as metamethods and coroutines) and the standard library.
 
 The majority of language-level features is implemented, and may be expected
 to work. If you find behaviour that does not conform to Lua 5.3 as defined by the Lua Reference
-Manual, please [open a new issue](https://github.com/mjanicek/rembulan/issues).
+Manual, please [open a new issue](https://github.com/luavixen/rembulan/issues).
 
 See also the [completeness table](doc/CompletenessTable.md) that maps out the current
 completeness status of Rembulan with regard to PUC-Lua, in particular the standard library.
@@ -65,9 +63,9 @@ Rembulan requires a Java Runtime Environment (JRE) version 7 or higher.
 
 Generated JavaDocs are available online:
 
- * [Runtime module](https://mjanicek.github.io/rembulan/apidocs/rembulan-runtime/index.html)
- * [Compiler](https://mjanicek.github.io/rembulan/apidocs/rembulan-compiler/index.html)
- * [Standard Library](https://mjanicek.github.io/rembulan/apidocs/rembulan-stdlib/index.html)
+ * [Runtime module](https://luavixen.github.io/rembulan/apidocs/rembulan-runtime/index.html)
+ * [Compiler](https://luavixen.github.io/rembulan/apidocs/rembulan-compiler/index.html)
+ * [Standard Library](https://luavixen.github.io/rembulan/apidocs/rembulan-stdlib/index.html)
 
 There are also a few short texts in the `doc` folder:
 
@@ -87,7 +85,7 @@ Maven will pull in the remaining dependencies as part of the build process.
 To fetch the latest code on the `master` branch and build it, run
 
 ```sh
-git clone https://github.com/mjanicek/rembulan.git
+git clone https://github.com/luavixen/rembulan.git
 cd rembulan    
 mvn install
 ```
@@ -119,7 +117,7 @@ used as its drop-in replacement.
 
 ```
 $ ./rembulan-capsule.x
-Rembulan 0.1-SNAPSHOT (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_60)
+Rembulan 0.2-SNAPSHOT (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_60)
 > print("hello world!")
 hello world!
 ```
@@ -144,9 +142,9 @@ To include the **runtime** as a dependency:
 
 ```xml
 <dependency>
-  <groupId>net.sandius.rembulan</groupId>
+  <groupId>dev.foxgirl.rembulan</groupId>
   <artifactId>rembulan-runtime</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -154,9 +152,9 @@ To include the **compiler** as a dependency:
 
 ```xml
 <dependency>
-  <groupId>net.sandius.rembulan</groupId>
+  <groupId>dev.foxgirl.rembulan</groupId>
   <artifactId>rembulan-compiler</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -164,9 +162,9 @@ To include the **standard library** as a dependency:
 
 ```xml
 <dependency>
-  <groupId>net.sandius.rembulan</groupId>
+  <groupId>dev.foxgirl.rembulan</groupId>
   <artifactId>rembulan-stdlib</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.2-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -191,7 +189,7 @@ to implement CPU accounting and scheduling of asynchronous operations.
 The following snippet loads the Lua program `print('hello world!')`, compiles it, loads
 it into a (non-sandboxed) state, and runs it:
 
-(From [`rembulan-examples/.../HelloWorld.java`](rembulan-examples/src/main/java/net/sandius/rembulan/examples/HelloWorld.java))
+(From [`rembulan-examples/.../HelloWorld.java`](rembulan-examples/src/main/java/dev/foxgirl/rembulan/examples/HelloWorld.java))
 
 ```java
 String program = "print('hello world!')";
@@ -219,7 +217,7 @@ hello world!
 Lua functions can be called in a mode that automatically pauses their execution once the
 given number of operations has been performed:
 
-(From [`rembulan-examples/.../InfiniteLoop.java`](rembulan-examples/src/main/java/net/sandius/rembulan/examples/InfiniteLoop.java))
+(From [`rembulan-examples/.../InfiniteLoop.java`](rembulan-examples/src/main/java/dev/foxgirl/rembulan/examples/InfiniteLoop.java))
 
 ```java
 String program = "n = 0; while true do n = n + 1 end";
@@ -250,14 +248,14 @@ Prints:
 n = 199999
 ```
 
-The [`CallPausedException`](https://mjanicek.github.io/rembulan/apidocs/rembulan-runtime/net/sandius/rembulan/exec/CallPausedException.html) contains a *continuation* of the call. The call can be resumed:
+The [`CallPausedException`](https://luavixen.github.io/rembulan/apidocs/rembulan-runtime/dev/foxgirl/rembulan/exec/CallPausedException.html) contains a *continuation* of the call. The call can be resumed:
 the pause is transparent to the Lua code, and the loop does not end with an error (it is merely
 paused).
 
 #### Further examples
 
 For further examples, see the classes in
-[`rembulan-examples/src/main/java/net/sandius/rembulan/examples`](rembulan-examples/src/main/java/net/sandius/rembulan/examples).
+[`rembulan-examples/src/main/java/dev/foxgirl/rembulan/examples`](rembulan-examples/src/main/java/dev/foxgirl/rembulan/examples).
 
 ### Project structure
 
@@ -285,4 +283,4 @@ Contributions of all kinds are welcome!
 ## License
 
 Rembulan is licensed under the Apache License Version 2.0. See the file
-[LICENSE.txt](LICENSE.txt) for details.
+[LICENSE.txt](LICENSE) for details.

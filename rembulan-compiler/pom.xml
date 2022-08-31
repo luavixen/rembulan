@@ -6,9 +6,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>net.sandius.rembulan</groupId>
+    <groupId>dev.foxgirl.rembulan</groupId>
     <artifactId>rembulan-parent</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2-SNAPSHOT</version>
     <relativePath>../rembulan-parent</relativePath>
   </parent>
 
@@ -17,9 +17,7 @@
   <packaging>jar</packaging>
 
   <name>Rembulan Compiler</name>
-  <description>Rembulan Compiler</description>
-  <url>https://github.com/mjanicek/rembulan/</url>
-  <inceptionYear>2016</inceptionYear>
+  <url>https://github.com/luavixen/rembulan/</url>
 
   <licenses>
     <license>
@@ -32,11 +30,15 @@
     <developer>
       <name>Miroslav Janíček</name>
     </developer>
+    <developer>
+      <name>Lua MacDougall</name>
+      <email>lua@foxgirl.dev</email>
+    </developer>
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/mjanicek/rembulan.git</connection>
-    <url>https://github.com/mjanicek/rembulan/tree/master</url>
+    <connection>scm:git:git://github.com/luavixen/rembulan.git</connection>
+    <url>https://github.com/luavixen/rembulan/tree/main</url>
   </scm>
 
   <properties>
@@ -46,7 +48,7 @@
   <dependencies>
 
     <dependency>
-      <groupId>net.sandius.rembulan</groupId>
+      <groupId>dev.foxgirl.rembulan</groupId>
       <artifactId>rembulan-runtime</artifactId>
       <version>${project.parent.version}</version>
     </dependency>

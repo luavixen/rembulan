@@ -14,9 +14,9 @@ options {
 }
 
 PARSER_BEGIN(Parser)
-package net.sandius.rembulan.parser;
+package dev.foxgirl.rembulan.parser;
 
-import net.sandius.rembulan.parser.ast.*;
+import dev.foxgirl.rembulan.parser.ast.*;
 
 import java.util.*;
 

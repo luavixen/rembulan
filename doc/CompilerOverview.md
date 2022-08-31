@@ -10,18 +10,18 @@ other hand, however, it allows the compiler to perform some optimisations static
 analysis more easily.
 
 The main class of the compiler is
-[`net.sandius.rembulan.compiler.LuaCompiler`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/LuaCompiler.java)
+[`compiler.dev.foxgirl.rembulan.LuaCompiler`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/LuaCompiler.java)
 in the `rembulan-compiler` module.
 
 ## Basics
 
 Every Lua chunk is compiled to one or more classes that extend
-[`LuaFunction`](https://mjanicek.github.io/rembulan/apidocs/rembulan-runtime/net/sandius/rembulan/runtime/LuaFunction.html),
+[`LuaFunction`](https://luavixen.github.io/rembulan/apidocs/rembulan-runtime/dev/foxgirl/rembulan/runtime/LuaFunction.html),
 i.e., every resulting class corresponds to a Lua function in the source. Nested functions
 are treated analogously to static nested classes in Java.
 
 Function upvalues are represented as *fields* of the type
-[`Variable`](https://mjanicek.github.io/rembulan/apidocs/rembulan-runtime/net/sandius/rembulan/Variable.html); the number
+[`Variable`](https://luavixen.github.io/rembulan/apidocs/rembulan-runtime/dev/foxgirl/rembulan/Variable.html); the number
 of upvalues a function has determines the form of its constructor.
 
 ## Optimisations
@@ -82,7 +82,7 @@ additional entry point. Additionally, in the first case, we even have enough inf
 `a`, `b` and `x` unboxed.
 (**Note:** this step is not done yet.)
 
-Relevant class: [`net.sandius.rembulan.compiler.analysis.Typer`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/analysis/Typer.java)
+Relevant class: [`analysis.compiler.dev.foxgirl.rembulan.Typer`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/analysis/Typer.java)
 
 #### Branch inlining
 
@@ -90,7 +90,7 @@ Now, suppose that `condition` is always `false` or `nil`. In that case, we can s
 the `then`-branch entirely, and know that the type of `x` after the `if` statement
 is `integer` (with the value `0`).
 
-Relevant class: [`net.sandius.rembulan.compiler.tf.BranchInliner`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/tf/BranchInliner.java)
+Relevant class: [`tf.compiler.dev.foxgirl.rembulan.BranchInliner`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/tf/BranchInliner.java)
 
 #### Const folding
 
@@ -102,7 +102,7 @@ the result of `(a + b)` at compile-time, and use it as the type of the expressio
 The actual "addition" can then be safely removed from the IR representation of the function.
 (This is only true for operations that do not have any side-effects.)
 
-Relevant class: [`net.sandius.rembulan.compiler.tf.ConstFolder`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/tf/ConstFolder.java)
+Relevant class: [`tf.compiler.dev.foxgirl.rembulan.ConstFolder`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/tf/ConstFolder.java)
 
 #### Dead code elimination
 
@@ -113,8 +113,8 @@ This is done by computing the liveness of all variables (and temporary values),
 and pruning out dead code based on this information.
 
 Relevant classes:
-* [`net.sandius.rembulan.compiler.analysis.LivenessAnalyser`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/analysis/LivenessAnalyser.java)
-* [`net.sandius.rembulan.compiler.tf.DeadCodePruner`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/tf/DeadCodePruner.java)
+* [`analysis.compiler.dev.foxgirl.rembulan.LivenessAnalyser`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/analysis/LivenessAnalyser.java)
+* [`tf.compiler.dev.foxgirl.rembulan.DeadCodePruner`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/tf/DeadCodePruner.java)
 
 ## Code generation
 
@@ -134,7 +134,7 @@ need to be boxed.
 **Note:** this is likely to change in future versions, since boxing is a significant
 performance drag, and can in fact be removed rather easily at this point.
 
-Relevant class: [`net.sandius.rembulan.compiler.analysis.SlotAllocator`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/analysis/SlotAllocator.java)
+Relevant class: [`analysis.compiler.dev.foxgirl.rembulan.SlotAllocator`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/analysis/SlotAllocator.java)
 
 #### Code generation
 
@@ -147,5 +147,5 @@ resulting Java classfile as a byte array.
 This step uses the ASM framework.
 
 Relevant classes: 
-* [`net.sandius.rembulan.compiler.gen.CodeSegmenter`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/gen/CodeSegmenter.java)
-* [`net.sandius.rembulan.compiler.gen.asm.ASMBytecodeEmitter`](https://github.com/mjanicek/rembulan/blob/master/rembulan-compiler/src/main/java/net/sandius/rembulan/compiler/gen/asm/ASMBytecodeEmitter.java)
+* [`gen.compiler.dev.foxgirl.rembulan.CodeSegmenter`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/gen/CodeSegmenter.java)
+* [`asm.gen.compiler.dev.foxgirl.rembulan.ASMBytecodeEmitter`](https://github.com/luavixen/rembulan/blob/main/rembulan-compiler/src/main/java/dev/foxgirl/rembulan/compiler/gen/asm/ASMBytecodeEmitter.java)

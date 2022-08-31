@@ -1,1 +1,14 @@
-target
+.vscode
+.idea
+.gradle
+.settings
+.project
+.classpath
+gradle
+gradlew
+gradlew*
+bin
+run
+
+**/build
+**/target

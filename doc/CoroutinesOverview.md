@@ -13,7 +13,7 @@ What follows is a short overview of how coroutine switching is achieved in Java 
 terms. For Lua programs, this process is entirely transparent.
 
 Every Lua function is an instance of (a subtype of) the Java class
-[`LuaFunction`](https://mjanicek.github.io/rembulan/apidocs/rembulan-runtime/net/sandius/rembulan/runtime/LuaFunction.html)
+[`LuaFunction`](https://luavixen.github.io/rembulan/apidocs/rembulan-runtime/dev/foxgirl/rembulan/runtime/LuaFunction.html)
 with two methods (entry points): `invoke` and `resume`.
 `invoke` is called when the function is called; `resume` is called when it is being resumed
 having been previously paused in an `invoke` or `resume`. Every operation that may involve
@@ -34,9 +34,9 @@ catch (UnresolvedControlThrowable ct) {
 ```
 
 (For more details, see
-[`Dispatch`](https://mjanicek.github.io/rembulan/apidocs/rembulan-runtime/net/sandius/rembulan/runtime/Dispatch.html),
-[`UnresolvedControlThrowable`](https://mjanicek.github.io/rembulan/apidocs/rembulan-runtime/net/sandius/rembulan/runtime/UnresolvedControlThrowable.html)
-and [`ResolvedControlThrowable`](https://mjanicek.github.io/rembulan/apidocs/rembulan-runtime/net/sandius/rembulan/runtime/ResolvedControlThrowable.html).)
+[`Dispatch`](https://luavixen.github.io/rembulan/apidocs/rembulan-runtime/dev/foxgirl/rembulan/runtime/Dispatch.html),
+[`UnresolvedControlThrowable`](https://luavixen.github.io/rembulan/apidocs/rembulan-runtime/dev/foxgirl/rembulan/runtime/UnresolvedControlThrowable.html)
+and [`ResolvedControlThrowable`](https://luavixen.github.io/rembulan/apidocs/rembulan-runtime/dev/foxgirl/rembulan/runtime/ResolvedControlThrowable.html).)
 
 Adding call frame information to that exception and rethrowing serves two purposes:
 
