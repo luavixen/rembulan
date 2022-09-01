@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +16,6 @@
  */
 
 package dev.foxgirl.rembulan;
-
-import java.util.Arrays;
 
 /**
  * Static methods implementing Lua value conversions.
@@ -44,16 +43,14 @@ public final class Conversions {
 	 * @return  a number representing the numerical value of {@code s} (in the canonical
 	 *          representation), or {@code null} if {@code s} does not have a numerical value
 	 */
-	public static Number numericalValueOf(ByteString s) {
-		String trimmed = s.toString().trim();
+	public static Number numericalValueOf(String s) {
+		s = s.trim();
 		try {
-			return Long.valueOf(LuaFormat.parseInteger(trimmed));
-		}
-		catch (NumberFormatException ei) {
+			return Long.valueOf(LuaFormat.parseInteger(s));
+		} catch (NumberFormatException e1) {
 			try {
-				return Double.valueOf(LuaFormat.parseFloat(trimmed));
-			}
-			catch (NumberFormatException ef) {
+				return Double.valueOf(LuaFormat.parseFloat(s));
+			} catch (NumberFormatException e2) {
 				return null;
 			}
 		}
@@ -64,7 +61,7 @@ public final class Conversions {
 	 * does not have a numerical value.
 	 *
 	 * <p>If {@code o} is already a number, returns {@code o} cast to number. If {@code o}
-	 * is a string, returns its numerical value (see {@link #numericalValueOf(ByteString)}).
+	 * is a string, returns its numerical value (see {@link #numericalValueOf(String)}).
 	 * Otherwise, returns {@code null}.</p>
 	 *
 	 * <p>This method differs from {@link #arithmeticValueOf(Object)} in that it
@@ -81,10 +78,16 @@ public final class Conversions {
 	 * @see #arithmeticValueOf(Object)
 	 */
 	public static Number numericalValueOf(Object o) {
-		if (o instanceof Number) return (Number) o;
-		else if (o instanceof ByteString) return numericalValueOf((ByteString) o);
-		else if (o instanceof String) return numericalValueOf(ByteString.of((String) o));
-		else return null;
+		if (o instanceof Number) {
+			return (Number) o;
+		}
+		if (o instanceof String) {
+			return numericalValueOf((String) o);
+		}
+		if (o instanceof ByteString) {
+			return numericalValueOf(((ByteString) o).toString());
+		}
+		return null;
 	}
 
 	/**
@@ -111,8 +114,7 @@ public final class Conversions {
 		Number n = numericalValueOf(o);
 		if (n == null) {
 			throw new ConversionException((name != null ? name : "value") + " must be a number");
-		}
-		else {
+		} else {
 			return n;
 		}
 	}
@@ -132,12 +134,10 @@ public final class Conversions {
 		if (n instanceof Long || n instanceof Double) {
 			// already in canonical representation
 			return n;
-		}
-		else if (n instanceof Float) {
+		} else if (n instanceof Float) {
 			// re-box
 			return Double.valueOf(n.doubleValue());
-		}
-		else {
+		} else {
 			// re-box
 			return Long.valueOf(n.longValue());
 		}
@@ -159,9 +159,13 @@ public final class Conversions {
 	 * @return  {@code o} converted to canonical representation
 	 */
 	public static Object canonicalRepresentationOf(Object o) {
-		if (o instanceof Number) return toCanonicalNumber((Number) o);
-		else if (o instanceof String) return ByteString.of((String) o);
-		else return o;
+		if (o instanceof Number) {
+			return toCanonicalNumber((Number) o);
+		}
+		if (o instanceof String) {
+			return ByteString.of((String) o);
+		}
+		return o;
 	}
 
 	/**
@@ -179,8 +183,7 @@ public final class Conversions {
 	 *          a byte string, {@code o} otherwise
 	 */
 	public static Object javaRepresentationOf(Object o) {
-		if (o instanceof ByteString) return o.toString();
-		else return o;
+		return o instanceof ByteString ? o.toString() : o;
 	}
 
 	/**
@@ -195,8 +198,7 @@ public final class Conversions {
 	 */
 	public static void toCanonicalValues(Object[] values) {
 		for (int i = 0; i < values.length; i++) {
-			Object v = values[i];
-			values[i] = canonicalRepresentationOf(v);
+			values[i] = canonicalRepresentationOf(values[i]);
 		}
 	}
 
@@ -216,8 +218,7 @@ public final class Conversions {
 	 */
 	public static void toJavaValues(Object[] values) {
 		for (int i = 0; i < values.length; i++) {
-			Object v = values[i];
-			values[i] = javaRepresentationOf(v);
+			values[i] = javaRepresentationOf(values[i]);
 		}
 	}
 
@@ -231,8 +232,7 @@ public final class Conversions {
 	 * @see #canonicalRepresentationOf(Object)
 	 */
 	public static Object[] copyAsCanonicalValues(Object[] values) {
-		values = Arrays.copyOf(values, values.length);
-		toCanonicalValues(values);
+		toCanonicalValues(values = values.clone());
 		return values;
 	}
 
@@ -250,8 +250,7 @@ public final class Conversions {
 	 * @see #javaRepresentationOf(Object)
 	 */
 	public static Object[] copyAsJavaValues(Object[] values) {
-		values = Arrays.copyOf(values, values.length);
-		toJavaValues(values);
+		toJavaValues(values = values.clone());
 		return values;
 	}
 
@@ -287,9 +286,13 @@ public final class Conversions {
 	 *          {@code o} is a {@code java.lang.String}, {@code o} otherwise
 	 */
 	public static Object normaliseKey(Object o) {
-		if (o instanceof Number) return normaliseKey((Number) o);
-		else if (o instanceof String) return ByteString.of((String) o);
-		else return o;
+		if (o instanceof Number) {
+			return normaliseKey((Number) o);
+		}
+		if (o instanceof String) {
+			return ByteString.of((String) o);
+		}
+		return o;
 	}
 
 	/**
@@ -297,7 +300,7 @@ public final class Conversions {
 	 * does not have an arithmetic value.
 	 *
 	 * <p>If {@code o} is a number, then that number is its arithmetic value. If {@code o}
-	 * is a string that has a numerical value (see {@link #numericalValueOf(ByteString)}),
+	 * is a string that has a numerical value (see {@link #numericalValueOf(String)}),
 	 * its arithmetic value is the numerical value converted to a float. Otherwise,
 	 * {@code o} does not have an arithmetic value.</p>
 	 *
@@ -328,10 +331,8 @@ public final class Conversions {
 		if (o instanceof Number) {
 			return (Number) o;
 		}
-		else {
-			Number n = numericalValueOf(o);
-			return n != null ? floatValueOf(n) : null;
-		}
+		Number n = numericalValueOf(o);
+		return n != null ? floatValueOf(n) : null;
 	}
 
 	/**
@@ -353,14 +354,14 @@ public final class Conversions {
 	public static Long integerValueOf(Number n) {
 		if (n instanceof Double || n instanceof Float) {
 			double d = n.doubleValue();
-			return LuaMathOperators.hasExactIntegerRepresentation(d) ? Long.valueOf((long) d) : null;
+			return LuaMathOperators.hasExactIntegerRepresentation(d)
+					? Long.valueOf((long) d)
+					: null;
 		}
-		else if (n instanceof Long) {
+		if (n instanceof Long) {
 			return (Long) n;
 		}
-		else {
-			return Long.valueOf(n.longValue());
-		}
+		return Long.valueOf(n.longValue());
 	}
 
 	/**
@@ -382,8 +383,7 @@ public final class Conversions {
 		Long l = integerValueOf(n);
 		if (l != null) {
 			return l.longValue();
-		}
-		else {
+		} else {
 			throw new NoIntegerRepresentationException();
 		}
 	}
@@ -424,8 +424,7 @@ public final class Conversions {
 		Long l = integerValueOf(o);
 		if (l != null) {
 			return l.longValue();
-		}
-		else {
+		} else {
 			throw new NoIntegerRepresentationException();
 		}
 	}
@@ -493,8 +492,7 @@ public final class Conversions {
 	public static ByteString stringValueOf(Number n) {
 		if (n instanceof Double || n instanceof Float) {
 			return LuaFormat.toByteString(n.doubleValue());
-		}
-		else {
+		} else {
 			return LuaFormat.toByteString(n.longValue());
 		}
 	}
@@ -513,9 +511,9 @@ public final class Conversions {
 	 */
 	public static ByteString stringValueOf(Object o) {
 		if (o instanceof ByteString) return (ByteString) o;
-		else if (o instanceof Number) return stringValueOf((Number) o);
-		else if (o instanceof String) return ByteString.of((String) o);
-		else return null;
+		if (o instanceof Number) return stringValueOf((Number) o);
+		if (o instanceof String) return ByteString.of((String) o);
+		return null;
 	}
 
 	/**
@@ -546,13 +544,11 @@ public final class Conversions {
 	 */
 	public static ByteString toHumanReadableString(Object o) {
 		if (o == null) return LuaFormat.NIL;
-		else if (o instanceof ByteString) return (ByteString) o;
-		else if (o instanceof Number) return stringValueOf((Number) o);
-		else if (o instanceof Boolean) return LuaFormat.toByteString(((Boolean) o).booleanValue());
-		else if (o instanceof String) return ByteString.of((String) o);
-		else return ByteString.of(String.format("%s: %#010x",
-					PlainValueTypeNamer.INSTANCE.typeNameOf(o),
-					o.hashCode()));
+		if (o instanceof ByteString) return (ByteString) o;
+		if (o instanceof String) return ByteString.of((String) o);
+		if (o instanceof Number) return stringValueOf((Number) o);
+		if (o instanceof Boolean) return LuaFormat.toByteString(((Boolean) o).booleanValue());
+		return ByteString.of(String.format("%s: %#010x", PlainValueTypeNamer.INSTANCE.typeNameOf(o), o.hashCode()));
 	}
 
 	/**
@@ -570,13 +566,10 @@ public final class Conversions {
 	public static Object toErrorObject(Throwable t) {
 		if (t instanceof LuaRuntimeException) {
 			return ((LuaRuntimeException) t).getErrorObject();
-		}
-		else {
+		} else {
 			return t.getMessage();
 		}
 	}
-
-	private static final ByteString NULL_ERROR_MESSAGE = ByteString.constOf("(null)");
 
 	/**
 	 * Converts a {@code Throwable} {@code t} to an error message (a byte string).
@@ -594,8 +587,10 @@ public final class Conversions {
 	 * @throws NullPointerException  if {@code t} is {@code null}
 	 */
 	public static ByteString toErrorMessage(Throwable t) {
-		ByteString m = Conversions.stringValueOf(toErrorObject(t));
+		ByteString m = stringValueOf(toErrorObject(t));
 		return m != null ? m : NULL_ERROR_MESSAGE;
 	}
+
+	private static final ByteString NULL_ERROR_MESSAGE = ByteString.constOf("(null)");
 
 }
