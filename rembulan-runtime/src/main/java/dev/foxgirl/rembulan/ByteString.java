@@ -286,37 +286,6 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 		return new String(chars);
 	}
 
-	private static final class ByteIteratorImpl implements ByteIterator {
-		private final byte[] bytes;
-		private int index;
-
-		private ByteIteratorImpl(byte[] bytes) {
-			this.bytes = bytes;
-			this.index = 0;
-		}
-
-		@Override
-		public boolean hasNext() {
-			return index < bytes.length;
-		}
-
-		@Override
-		public byte nextByte() {
-			if (!hasNext()) throw new NoSuchElementException();
-			return bytes[index++];
-		}
-
-		@Override
-		public Byte next() {
-			return nextByte();
-		}
-
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
-	}
-
 	/**
 	 * Returns an iterator over the bytes in this byte string.
 	 *
@@ -324,7 +293,30 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 */
 	@Override
 	public ByteIterator iterator() {
-		return new ByteIteratorImpl(data);
+		return new ByteIterator() {
+			int index = 0;
+
+			@Override
+			public boolean hasNext() {
+				return index < data.length;
+			}
+
+			@Override
+			public byte nextByte() {
+				if (!hasNext()) throw new NoSuchElementException();
+				return data[index++];
+			}
+
+			@Override
+			public Byte next() {
+				return nextByte();
+			}
+
+			@Override
+			public void remove() {
+				throw new UnsupportedOperationException();
+			}
+		};
 	}
 
 
