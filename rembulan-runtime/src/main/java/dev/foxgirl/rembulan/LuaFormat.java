@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +17,7 @@
 
 package dev.foxgirl.rembulan;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Static methods for parsing and generating lexical strings following the Lua lexical
@@ -47,9 +45,14 @@ public final class LuaFormat {
 	public static final ByteString FALSE = ByteString.constOf("false");
 
 	/**
-	 * The byte string representation of infinity.
+	 * The byte string representation of positive infinity.
 	 */
 	public static final ByteString INF = ByteString.constOf("inf");
+
+	/**
+	 * The byte string representation of negative infinity.
+	 */
+	public static final ByteString NEG_INF = ByteString.constOf("-inf");
 
 	/**
 	 * The byte string representation of <i>NaN</i>.
@@ -160,16 +163,6 @@ public final class LuaFormat {
 		return toByteString(f).toString();
 	}
 
-	private static ByteString finiteDoubleToByteString(double f) {
-		// f assumed not to be NaN or infinite
-		// TODO: check precision used in Lua
-		// TODO: don't go via java.lang.String
-		String s = Double.toString(f).toLowerCase();
-		return ByteString.of(s);
-	}
-
-	private static final ByteString NEG_INF = ByteString.constOf("-" + INF);
-
 	/**
 	 * Returns the Lua format byte string representation of the float value {@code f}.
 	 *
@@ -177,24 +170,13 @@ public final class LuaFormat {
 	 * @return  byte string representation of {@code f}
 	 */
 	public static ByteString toByteString(double f) {
-		if (Double.isNaN(f)) return NAN;
-		else if (Double.isInfinite(f)) return f > 0 ? INF : NEG_INF;
-		else return finiteDoubleToByteString(f);
-	}
-
-	private static int hexValue(int c) {
-		if (c >= '0' && c <= '9') {
-			return c - (int) '0';
+		if (Double.isNaN(f)) {
+			return NAN;
 		}
-		else if (c >= 'a' && c <= 'f') {
-			return 10 + c - (int) 'a';
+		if (Double.isInfinite(f)) {
+			return f > 0 ? INF : NEG_INF;
 		}
-		else if (c >= 'A' && c <= 'F') {
-			return 10 + c - (int) 'A';
-		}
-		else {
-			return -1;
-		}
+		return ByteString.of(Double.toString(f).replace('E', 'e'));
 	}
 
 	/**
@@ -217,14 +199,14 @@ public final class LuaFormat {
 			int from = Math.max(2, s.length() - 16);
 
 			for (int idx = 2; idx < from; idx++) {
-				if (hexValue(s.charAt(idx)) < 0) {
+				if (toHexValue(s.charAt(idx)) < 0) {
 					throw new NumberFormatException("Illegal character #" + idx + " in \"" + s + "\"");
 				}
 			}
 
-			// only take the last 16 characters of the string for the value
+			// Only take the last 16 characters of the string for the value
 			for (int idx = Math.max(2, s.length() - 16); idx < s.length(); idx++) {
-				int hex = hexValue(s.charAt(idx));
+				int hex = toHexValue(s.charAt(idx));
 				if (hex < 0) {
 					throw new NumberFormatException("Illegal character #" + idx + " in \"" + s + "\"");
 				}
@@ -232,10 +214,22 @@ public final class LuaFormat {
 			}
 
 			return l;
-		}
-		else {
+		} else {
 			return Long.parseLong(s);
 		}
+	}
+
+	private static int toHexValue(int c) {
+		if (c >= '0' && c <= '9') {
+			return c - (int) '0';
+		}
+		if (c >= 'a' && c <= 'f') {
+			return 10 + c - (int) 'a';
+		}
+		if (c >= 'A' && c <= 'F') {
+			return 10 + c - (int) 'A';
+		}
+		return -1;
 	}
 
 	/**
@@ -254,14 +248,15 @@ public final class LuaFormat {
 	public static double parseFloat(String s) throws NumberFormatException {
 		try {
 			return Double.parseDouble(s);
-		}
-		catch (NumberFormatException e0) {
-			// might be missing the trailing exponent for hex floating point constants
+		} catch (NumberFormatException ex) {
+			// Note that Lua considers the binary exponent part of hexadecimal
+			// float constants to be optional, but parseDouble does not. Check
+			// to see if adding a binary exponent part causes parsing to
+			// succeed.
 			try {
 				return Double.parseDouble(s.trim() + "p0");
-			}
-			catch (NumberFormatException e1) {
-				throw new NumberFormatException("Not a number: " + s);
+			} catch (NumberFormatException ignored) {
+				throw ex;
 			}
 		}
 	}
@@ -283,8 +278,7 @@ public final class LuaFormat {
 	public static Long tryParseInteger(String s) {
 		try {
 			return parseInteger(s);
-		}
-		catch (NumberFormatException ex) {
+		} catch (NumberFormatException ignored) {
 			return null;
 		}
 	}
@@ -306,8 +300,7 @@ public final class LuaFormat {
 	public static Double tryParseFloat(String s) {
 		try {
 			return parseFloat(s);
-		}
-		catch (NumberFormatException ex) {
+		} catch (NumberFormatException ignored) {
 			return null;
 		}
 	}
@@ -327,42 +320,23 @@ public final class LuaFormat {
 	 *          is not a numeral
 	 */
 	public static Number tryParseNumeral(String s) {
-		Long l = tryParseInteger(s);
-		return l != null ? l : (Number) tryParseFloat(s);
+		Number n = tryParseInteger(s);
+		return n != null ? n : tryParseFloat(s);
 	}
 
 	/**
-	 * The '\a' character.
+	 * Returns a string {@code esc} formed from the byte string {@code s} such that
+	 * when {@code esc} is read by a Lua lexer as a string literal, it evaluates to
+	 * a byte string equal to {@code s}. The resulting string is enclosed in double quotes
+	 * ({@code "}).
+	 *
+	 * @param byteString  the byte sequence to escape, must not be {@code null}
+	 * @return  a Lua string literal representing {@code s}
+	 *
+	 * @throws NullPointerException  if {@code s} is {@code null}
 	 */
-	public static final char CHAR_BELL = 0x07;
-
-	/**
-	 * The '\v' character.
-	 */
-	public static final char CHAR_VERTICAL_TAB = 0x0b;
-
-	private static boolean isASCIIPrintable(char c) {
-		// ASCII printable character range
-		return c >= 32 && c < 127;
-	}
-
-	private static int shortEscape(char c) {
-		switch (c) {
-			case CHAR_BELL: return 'a';
-			case '\b': return 'b';
-			case '\f': return 'f';
-			case '\n': return 'n';
-			case '\r': return 'r';
-			case '\t': return 't';
-			case CHAR_VERTICAL_TAB: return 'v';
-			case '"': return '"';
-			default: return -1;
-		}
-	}
-
-	private static char toHex(int i) {
-		// i must be between 0x0 and 0xf
-		return i < 0xa ? (char) ((int) '0' + i) : (char) ((int) 'a' + i - 0xa);
+	public static String escape(ByteString byteString) {
+		return escape(byteString.toRawString());
 	}
 
 	/**
@@ -378,65 +352,49 @@ public final class LuaFormat {
 	public static String escape(CharSequence s) {
 		Objects.requireNonNull(s);
 
-		StringBuilder bld = new StringBuilder();
-		bld.append('"');
+		StringBuilder bld = new StringBuilder().append('"');
 
-		for (int i = 0; i < s.length(); i++) {
+		for (int i = 0, length = s.length(); i < length; i++) {
 			char c = s.charAt(i);
-
-			if (c != '\\' && c != '"' && isASCIIPrintable(c)) {
+			if (c != '\\' && c != '"' && isPrintableChar(c)) {
 				bld.append(c);
-			}
-			else {
-				// escaping
+			} else {
 				bld.append('\\');
-
-				int esc = shortEscape(c);
-
-				if (esc != -1) {
-					bld.append((char) esc);
-				}
-				else {
-					if ((int) c <= 0xff) {
-						bld.append('x');
-						bld.append(toHex(((int) c >>> 8) & 0xf));
-						bld.append(toHex((int) c & 0xf));
-					}
-					else {
-						bld.append(Integer.toString((int) c));
+				switch (c) {
+					case 0x07: bld.append('a');
+					case '\b': bld.append('b');
+					case '\f': bld.append('f');
+					case '\n': bld.append('n');
+					case '\r': bld.append('r');
+					case '\t': bld.append('t');
+					case 0x0B: bld.append('v');
+					case '"': bld.append('"');
+					default: {
+						if ((int) c <= 0xFF) {
+							bld.append('x');
+							bld.append(toHexChar(((int) c >>> 4) & 0xF));
+							bld.append(toHexChar(((int) c      ) & 0xF));
+						} else {
+							bld.append((int) c);
+						}
 					}
 				}
 			}
 		}
 
-		bld.append('"');
-		return bld.toString();
+		return bld.append('"').toString();
 	}
 
-	/**
-	 * Returns a string {@code esc} formed from the byte string {@code s} such that
-	 * when {@code esc} is read by a Lua lexer as a string literal, it evaluates to
-	 * a byte string equal to {@code s}. The resulting string is enclosed in double quotes
-	 * ({@code "}).
-	 *
-	 * @param byteString  the byte sequence sequence to escape, must not be {@code null}
-	 * @return  a Lua string literal representing {@code s}
-	 *
-	 * @throws NullPointerException  if {@code s} is {@code null}
-	 */
-	public static String escape(ByteString byteString) {
-		return escape(byteString.toRawString());
+	private static boolean isPrintableChar(char c) {
+		// ASCII printable character range
+		return c >= 32 && c < 127;
 	}
 
-	private static final Set<String> keywords;
-
-	static {
-		Set<String> ks = new HashSet<>();
-		Collections.addAll(ks,
-				"and", "break", "do", "else", "elseif", "end", "false", "for",
-				"function", "goto", "if", "in", "local", "nil", "not", "or",
-				"repeat", "return", "then", "true", "until", "while");
-		keywords = Collections.unmodifiableSet(ks);
+	private static char toHexChar(int i) {
+		// i must be between 0x0 and 0xF
+		return i < 0xA
+			? (char) ((int) '0' + i)
+			: (char) ((int) 'a' + i - 0xA);
 	}
 
 	/**
@@ -454,6 +412,17 @@ public final class LuaFormat {
 	 */
 	public static boolean isKeyword(String s) {
 		return s != null && keywords.contains(s);
+	}
+
+	private static final Set<String> keywords;
+
+	static {
+		Set<String> ks = new HashSet<>();
+		Collections.addAll(ks,
+				"and", "break", "do", "else", "elseif", "end", "false", "for",
+				"function", "goto", "if", "in", "local", "nil", "not", "or",
+				"repeat", "return", "then", "true", "until", "while");
+		keywords = Collections.unmodifiableSet(ks);
 	}
 
 	/**
@@ -479,16 +448,18 @@ public final class LuaFormat {
 		}
 
 		char c = s.charAt(0);
+		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c != '_')) {
+			return false;
+		}
 
-		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c != '_')) return false;
-
-		for (int i = 1; i < s.length(); i++) {
+		for (int i = 1, length = s.length(); i < length; i++) {
 			c = s.charAt(i);
-			if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c != '_') && (c < '0' || c > '9')) return false;
+			if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c != '_') && (c < '0' || c > '9')) {
+				return false;
+			}
 		}
 
 		return true;
 	}
-
 
 }

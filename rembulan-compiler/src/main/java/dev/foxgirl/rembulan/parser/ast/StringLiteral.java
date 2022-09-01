@@ -19,7 +19,6 @@ package dev.foxgirl.rembulan.parser.ast;
 import dev.foxgirl.rembulan.ByteString;
 import dev.foxgirl.rembulan.ByteStringBuilder;
 import dev.foxgirl.rembulan.ByteStringInputStream;
-import dev.foxgirl.rembulan.LuaFormat;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -189,7 +188,7 @@ public class StringLiteral extends Literal {
 								value = (value << 4) + digit;
 
 								if (value >= Character.MAX_CODE_POINT) {
-			                        throw new IllegalArgumentException("UTF-8 value too large at index " + (pos - 1));
+									throw new IllegalArgumentException("UTF-8 value too large at index " + (pos - 1));
 								}
 							}
 						}
@@ -219,13 +218,13 @@ public class StringLiteral extends Literal {
 				else {
 					final char d;
 					switch (c) {
-						case 'a': d = LuaFormat.CHAR_BELL; break;
+						case 'a': d = 0x07; break;
 						case 'b': d = '\b'; break;
 						case 'f': d = '\f'; break;
 						case 'n': d = '\n'; break;
 						case 'r': d = '\r'; break;
 						case 't': d = '\t'; break;
-						case 'v': d = LuaFormat.CHAR_VERTICAL_TAB; break;
+						case 'v': d = 0x0B; break;
 						case '\\': d = '\\'; break;
 						case '\'': d = '\''; break;
 						case '"': d = '"'; break;
