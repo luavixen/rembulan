@@ -19,10 +19,45 @@ package dev.foxgirl.rembulan.util;
 
 import java.util.*;
 
+/**
+ * A hash map similar in functionality to {@link java.util.LinkedHashMap}, with
+ * additional methods for accessing successor and predecessor keys/entries.
+ *
+ * <p>To get the keys following and preceding {@code k} in the map, use
+ * {@link #getSuccessorKey(Object)} and {@link #getPredecessorKey(Object)}, respectively.
+ * In order to access the first and last keys in the traversal orders, use
+ * {@link #getFirstKey()} and {@link #getLastKey()}.</p>
+ *
+ * @param <K>  key type
+ * @param <V>  value type
+ */
 public class TraversableHashMap<K, V> implements Map<K, V> {
 
+	/**
+	 * A map entry (key-value pair) for {@link TraversableHashMap}.
+	 *
+	 * @param <K>  key type
+	 * @param <V>  value type
+	 */
 	public interface Entry<K, V> extends Map.Entry<K, V> {
+		/**
+		 * Returns the entry that precedes this entry in the map, following
+		 * insertion order.
+		 *
+		 * @return
+		 *   the entry that precedes this entry or {@code null} if this entry
+		 *   is the first entry in the map
+		 */
 		Entry<K, V> getPredecessor();
+
+		/**
+		 * Returns the entry that succeeds this entry in the map, following
+		 * insertion order.
+		 *
+		 * @return
+		 *   the entry that succeeds this entry or {@code null} if this entry
+		 *   is the last entry in the map
+		 */
 		Entry<K, V> getSuccessor();
 	}
 
@@ -128,15 +163,12 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	private final class EntrySet extends AbstractSet<Map.Entry<K, V>> {
 		@Override public int size() { return size; }
 		@Override public Iterator<Map.Entry<K, V>> iterator() { return new EntryIterator(); }
-		@Override public void clear() { TraversableHashMap.this.clear(); }
+
+		@Override public void clear() { throw new UnsupportedOperationException(); }
+		@Override public boolean remove(Object obj) { throw new UnsupportedOperationException(); }
 
 		@Override
 		public boolean contains(Object obj) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public boolean remove(Object obj) {
 			throw new UnsupportedOperationException();
 		}
 	}
@@ -144,32 +176,26 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	private final class KeySet extends AbstractSet<K> {
 		@Override public int size() { return size; }
 		@Override public Iterator<K> iterator() { return new KeyIterator(); }
-		@Override public void clear() { TraversableHashMap.this.clear(); }
+
+		@Override public void clear() { throw new UnsupportedOperationException(); }
+		@Override public boolean remove(Object obj) { throw new UnsupportedOperationException(); }
 
 		@Override
 		public boolean contains(Object key) {
 			return containsKey(key);
-		}
-
-		@Override
-		public boolean remove(Object key) {
-			throw new UnsupportedOperationException();
 		}
 	}
 
 	private final class Values extends AbstractCollection<V> {
 		@Override public int size() { return size; }
 		@Override public Iterator<V> iterator() { return new ValueIterator(); }
-		@Override public void clear() { TraversableHashMap.this.clear(); }
+
+		@Override public void clear() { throw new UnsupportedOperationException(); }
+		@Override public boolean remove(Object obj) { throw new UnsupportedOperationException(); }
 
 		@Override
 		public boolean contains(Object value) {
 			return containsValue(value);
-		}
-
-		@Override
-		public boolean remove(Object value) {
-			throw new UnsupportedOperationException();
 		}
 	}
 
@@ -230,10 +256,10 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	}
 
 	/**
-	 * Constructs a new empty map with the given capacity.
+	 * Constructs a new empty map with the specified initial capacity.
 	 *
 	 * @param capacity  initial capacity
-	 * @throws IllegalArgumentException  if {@code capacity} is less than zero
+	 * @throws IllegalArgumentException  if {@code capacity} is negative
 	 */
 	public TraversableHashMap(int capacity) {
 		if (capacity < 0) {
@@ -246,7 +272,7 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	 * Constructs a new map with the same contents as the given map.
 	 *
 	 * @param map  map to copy entries from
-	 * @throws NullPointerException  if {@code map} is null
+	 * @throws NullPointerException  if {@code map} is {@code null}
 	 */
 	public TraversableHashMap(Map<? extends K, ? extends V> map) {
 		putAll(map);
@@ -334,7 +360,7 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	/**
 	 * Returns the first entry in this map, following insertion order.
 	 *
-	 * @return  the first entry or null if the map is empty
+	 * @return  the first entry or {@code null} if the map is empty
 	 */
 	public Map.Entry<K, V> getFirst() {
 		return head;
@@ -343,7 +369,7 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	/**
 	 * Returns the last entry in this map, following insertion order.
 	 *
-	 * @return  the last entry or null if the map is empty
+	 * @return  the last entry or {@code null} if the map is empty
 	 */
 	public Map.Entry<K, V> getLast() {
 		return tail;
@@ -352,7 +378,7 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	/**
 	 * Returns the first key in this map, following insertion order.
 	 *
-	 * @return  the first key or null if the map is empty
+	 * @return  the first key or {@code null} if the map is empty
 	 */
 	public K getFirstKey() {
 		return head != null ? head.key : null;
@@ -361,7 +387,7 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	/**
 	 * Returns the last key in this map, following insertion order.
 	 *
-	 * @return  the last key or null if the map is empty
+	 * @return  the last key or {@code null} if the map is empty
 	 */
 	public K getLastKey() { return tail != null ? tail.key : null; }
 
@@ -369,7 +395,8 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	 * Returns the entry associated with the given key.
 	 *
 	 * @param key  the key to find the associated entry of
-	 * @return  the entry or null if no entry is associated with the given key
+	 * @return
+	 *   the entry or {@code null} if no entry is associated with the given key
 	 */
 	public Entry<K, V> getEntry(Object key) {
 		return findNode(key);
@@ -381,8 +408,8 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	 *
 	 * @param key  the key to find the predecessor of
 	 * @return
-	 *   the entry that precedes {@code key}'s associated entry or null if
-	 *   {@code key}'s associated entry is the first entry in the map
+	 *   the entry that precedes {@code key}'s associated entry or {@code null}
+	 *   if {@code key}'s associated entry is the first entry in the map
 	 * @throws NoSuchElementException
 	 *   if this map has no entry associated with {@code key}
 	 */
@@ -398,8 +425,8 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	 *
 	 * @param key  the key to find the successor of
 	 * @return
-	 *   the entry that succeeds {@code key}'s associated entry or null if
-	 *   {@code key}'s associated entry is the last entry in the map
+	 *   the entry that succeeds {@code key}'s associated entry or {@code null}
+	 *   if {@code key}'s associated entry is the last entry in the map
 	 * @throws NoSuchElementException
 	 *   if this map has no entry associated with {@code key}
 	 */
@@ -416,8 +443,8 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	 * @param key  the key to find the predecessor of
 	 * @return
 	 *   the key of the entry that precedes {@code key}'s associated entry
-	 *   or null if {@code key}'s associated entry is the first entry in the
-	 *   map
+	 *   or {@code null} if {@code key}'s associated entry is the first entry
+	 *   in the map
 	 * @throws NoSuchElementException
 	 *   if this map has no entry associated with {@code key}
 	 */
@@ -433,8 +460,8 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 	 * @param key  the key to find the successor of
 	 * @return
 	 *   the key of the entry that succeeds {@code key}'s associated entry
-	 *   or null if {@code key}'s associated entry is the first entry in the
-	 *   map
+	 *   or {@code null} if {@code key}'s associated entry is the last entry
+	 *   in the map
 	 * @throws NoSuchElementException
 	 *   if this map has no entry associated with {@code key}
 	 */
@@ -510,6 +537,13 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 		return size == 0;
 	}
 
+	/**
+	 * Returns an <i>immutable</i> {@link Set} view of the mappings contained
+	 * in this map. The set is backed by the map, so changes to the map are
+	 * reflected in the set.
+	 *
+	 * @return  a set view of the mappings contained in this map
+	 */
 	@Override
 	public Set<Map.Entry<K, V>> entrySet() {
 		if (entrySet == null) {
@@ -518,6 +552,13 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 		return entrySet;
 	}
 
+	/**
+	 * Returns an <i>immutable</i> {@link Set} view of the keys contained
+	 * in this map. The set is backed by the map, so changes to the map are
+	 * reflected in the set.
+	 *
+	 * @return  a set view of the keys contained in this map
+	 */
 	@Override
 	public Set<K> keySet() {
 		if (keySet == null) {
@@ -526,6 +567,13 @@ public class TraversableHashMap<K, V> implements Map<K, V> {
 		return keySet;
 	}
 
+	/**
+	 * Returns an <i>immutable</i> {@link Collection} view of the values
+	 * contained in this map. The collection is backed by the map, so changes
+	 * to the map are reflected in the collection.
+	 *
+	 * @return  a collection view of the values contained in this map
+	 */
 	@Override
 	public Collection<V> values() {
 		if (values == null) {

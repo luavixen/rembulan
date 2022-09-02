@@ -22,8 +22,8 @@ import dev.foxgirl.rembulan.ByteString;
 import java.util.Arrays;
 
 /**
- * ByteSink provides a very simple {@link java.lang.StringBuilder}-like
- * interface for creating byte arrays.
+ * A growable builder for byte arrays that provides a simple
+ * {@link java.lang.StringBuilder}-like interface.
  */
 public final class ByteSink {
 	private static final byte[] EMPTY = new byte[0];
@@ -95,7 +95,7 @@ public final class ByteSink {
 	 * @return  this sink
 	 * @throws IllegalArgumentException
 	 *   if the slice created by {@code count} and {@code start} is invalid
-	 * @throws NullPointerException  if {@code bytes} is null
+	 * @throws NullPointerException  if {@code bytes} is {@code null}
 	 */
 	public ByteSink write(byte[] bytes, int count, int start) {
 		if (bytes == null) {
@@ -130,7 +130,7 @@ public final class ByteSink {
 	 *
 	 * @param bytes  byte array to append
 	 * @return  this sink
-	 * @throws NullPointerException  if {@code bytes} is null
+	 * @throws NullPointerException  if {@code bytes} is {@code null}
 	 */
 	public ByteSink write(byte[] bytes) {
 		return this.write(bytes, bytes.length, 0);
@@ -158,7 +158,7 @@ public final class ByteSink {
 	 * @return  this byte sink
 	 * @throws IllegalArgumentException  if {@code target} is empty
 	 * @throws NullPointerException
-	 *   if either {@code target} or {@code replacement} is null
+	 *   if either {@code target} or {@code replacement} is {@code null}
 	 */
 	public ByteSink replace(byte[] target, byte[] replacement) {
 		if (target == null) {

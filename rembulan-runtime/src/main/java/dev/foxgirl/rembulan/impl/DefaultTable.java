@@ -22,8 +22,7 @@ import dev.foxgirl.rembulan.Table;
 import dev.foxgirl.rembulan.TableFactory;
 import dev.foxgirl.rembulan.util.TraversableHashMap;
 
-import java.util.ArrayList;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Default implementation of the Lua table storing all key-value pairs in a hashmap.
@@ -92,8 +91,15 @@ public class DefaultTable extends Table {
 		return oldMetatable;
 	}
 
+	private void arrayConvert() {
+		if (hashValues == null) return;
+		for (Long key = (long) arrayValues.size() + 1L; hashValues.containsKey(key); key++) {
+			arrayValues.add(hashValues.remove(key));
+		}
+	}
+
 	private void arrayRemove(long index) {
-		if (arrayValues != null && index > 0) {
+		if (arrayValues != null && index > 0L) {
 			int size = arrayValues.size();
 			if (index == (long) size) {
 				int i = size - 1;
@@ -111,19 +117,7 @@ public class DefaultTable extends Table {
 		}
 	}
 
-	private void arrayConvert() {
-		if (hashValues == null) return;
-		for (Long key = (long) arrayValues.size() + 1L; hashValues.containsKey(key); key++) {
-			arrayValues.add(hashValues.remove(key));
-		}
-	}
-
-	@Override
-	public void rawset(long index, Object value) {
-		if (value == null) {
-			arrayRemove(index);
-			return;
-		}
+	private void arraySet(long index, Object value) {
 		if (arrayValues != null) {
 			int size = arrayValues.size();
 			if (index > 0 && index <= (long) size) {
@@ -148,19 +142,12 @@ public class DefaultTable extends Table {
 	}
 
 	@Override
-	public Object rawget(long index) {
-		if (arrayValues != null && index > 0 && index <= (long) arrayValues.size()) {
-			return arrayValues.get((int) index - 1);
+	public void rawset(long index, Object value) {
+		if (value == null) {
+			arrayRemove(index);
+		} else {
+			arraySet(index, Conversions.canonicalRepresentationOf(value));
 		}
-		if (hashValues != null) {
-			return hashValues.get(Long.valueOf(index));
-		}
-		return null;
-	}
-
-	@Override
-	public long rawlen() {
-		return arrayValues != null ? (long) arrayValues.size() : 0L;
 	}
 
 	@Override
@@ -179,11 +166,22 @@ public class DefaultTable extends Table {
 				if (hashValues == null) {
 					hashValues = new TraversableHashMap<>();
 				}
-				hashValues.put(key, value);
+				hashValues.put(key, Conversions.canonicalRepresentationOf(value));
 			} else if (hashValues != null) {
 				hashValues.remove(key);
 			}
 		}
+	}
+
+	@Override
+	public Object rawget(long index) {
+		if (arrayValues != null && index > 0 && index <= (long) arrayValues.size()) {
+			return arrayValues.get((int) index - 1);
+		}
+		if (hashValues != null) {
+			return hashValues.get(Long.valueOf(index));
+		}
+		return null;
 	}
 
 	@Override
@@ -192,6 +190,11 @@ public class DefaultTable extends Table {
 			return rawget(((Long) key).longValue());
 		}
 		return hashValues != null ? hashValues.get(key) : null;
+	}
+
+	@Override
+	public long rawlen() {
+		return arrayValues != null ? (long) arrayValues.size() : 0L;
 	}
 
 	@Override
@@ -206,7 +209,7 @@ public class DefaultTable extends Table {
 	}
 
 	@Override
-	public Object successorKeyOf(Object key) {
+	public Object successorKey(Object key) {
 		key = Conversions.normaliseKey(key);
 		if (key != null && !(key instanceof Double && Double.isNaN(((Double) key).doubleValue()))) {
 			if (key instanceof Long && arrayValues != null && !arrayValues.isEmpty()) {
@@ -228,6 +231,84 @@ public class DefaultTable extends Table {
 			}
 		}
 		throw new IllegalArgumentException("invalid key to 'next'");
+	}
+
+	private final class KeyIterator implements Iterator<Object> {
+		private final ListIterator<Object> arrayIterator;
+		private final Iterator<Object> hashIterator;
+
+		private KeyIterator() {
+			arrayIterator = arrayValues != null
+					? arrayValues.listIterator() : null;
+			hashIterator = hashValues != null
+					? hashValues.keySet().iterator() : null;
+		}
+
+		@Override
+		public Object next() {
+			if (arrayIterator != null && arrayIterator.hasNext()) {
+				int index = arrayIterator.nextIndex(); arrayIterator.next();
+				return Long.valueOf((long) index + 1L);
+			}
+			if (hashIterator != null && hashIterator.hasNext()) {
+				return hashIterator.next();
+			}
+			throw new NoSuchElementException();
+		}
+
+		@Override
+		public boolean hasNext() {
+			return
+					arrayIterator != null && arrayIterator.hasNext() ||
+					hashIterator != null && hashIterator.hasNext();
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	private final class KeySet extends AbstractSet<Object> {
+		@Override
+		public Iterator<Object> iterator() {
+			return new KeyIterator();
+		}
+
+		@Override
+		public int size() {
+			int size = 0;
+			if (arrayValues != null) size += arrayValues.size();
+			if (hashValues != null) size += hashValues.size();
+			return size;
+		}
+
+		@Override
+		public boolean contains(Object key) {
+			if (key instanceof Long && arrayValues != null && !arrayValues.isEmpty()) {
+				long index = ((Long) key).longValue();
+				if (index > 0 && index <= (long) arrayValues.size()) return true;
+			}
+			if (hashValues != null && !hashValues.isEmpty()) {
+				return hashValues.containsKey(key);
+			}
+			return false;
+		}
+
+		@Override
+		public void clear() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean remove(Object key) {
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	@Override
+	public Set<Object> keySet() {
+		return new KeySet();
 	}
 
 }

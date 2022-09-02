@@ -969,7 +969,7 @@ public final class BasicLib {
 			final Object nxt;
 
 			if (index != null) {
-				nxt = table.successorKeyOf(index);
+				nxt = table.successorKey(index);
 			}
 			else {
 				nxt = table.initialKey();

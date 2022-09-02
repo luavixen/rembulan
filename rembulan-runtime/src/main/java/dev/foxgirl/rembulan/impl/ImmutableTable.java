@@ -22,9 +22,7 @@ import dev.foxgirl.rembulan.Table;
 import dev.foxgirl.rembulan.TableFactory;
 import dev.foxgirl.rembulan.util.TraversableHashMap;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An immutable table.
@@ -57,10 +55,6 @@ public class ImmutableTable extends Table {
 		this.values = values;
 	}
 
-	public ImmutableTable(Map<Object, Object> map) {
-		this.values = new TraversableHashMap<>(map);
-	}
-
 	/**
 	 * Returns an {@code ImmutableTable} based on the contents of the map {@code map}.
 	 *
@@ -81,8 +75,12 @@ public class ImmutableTable extends Table {
 	 * @throws NullPointerException  if {@code entries} is {@code null}
 	 * @throws IllegalArgumentException  if {@code map} contains a {@code null} or <i>NaN</i> key
 	 */
-	public static ImmutableTable of(Map<Object, Object> map) {
-		return new ImmutableTable(map);
+	public static ImmutableTable of(Map<?, ?> map) {
+		Builder builder = new Builder(map.size());
+		for (Map.Entry<?, ?> entry : map.entrySet()) {
+			builder.add(entry.getKey(), entry.getValue());
+		}
+		return builder.build();
 	}
 
 	/**
@@ -169,16 +167,17 @@ public class ImmutableTable extends Table {
 	}
 
 	@Override
-	public Object successorKeyOf(Object key) {
-		key = Conversions.normaliseKey(key);
-		if (key == null || (key instanceof Double && Double.isNaN(((Double) key).doubleValue()))) {
-			throw new IllegalArgumentException("invalid key to 'next'");
-		}
+	public Object successorKey(Object key) {
 		try {
-			return values.getSuccessorKey(key);
+			return values.getSuccessorKey(Conversions.normaliseKey(key));
 		} catch (NullPointerException err) {
 			throw new IllegalArgumentException("invalid key to 'next'", err);
 		}
+	}
+
+	@Override
+	public Set<Object> keySet() {
+		return values.keySet();
 	}
 
 	/**
@@ -203,6 +202,16 @@ public class ImmutableTable extends Table {
 		 */
 		public Builder() {
 			this.entries = new ArrayList<>();
+		}
+
+		/**
+		 * Constructs a new empty builder with the given capacity.
+		 *
+		 * @param capacity  initial capacity
+		 * @throws IllegalArgumentException  if {@code capacity} is negative
+		 */
+		public Builder(int capacity) {
+			this.entries = new ArrayList<>(capacity);
 		}
 
 		/**
@@ -246,7 +255,7 @@ public class ImmutableTable extends Table {
 				if (key instanceof Double && Double.isNaN(((Double) key).doubleValue())) {
 					throw new IllegalArgumentException("table index is NaN");
 				}
-				entries.add(new Entry(key, value));
+				entries.add(new Entry(key, Conversions.canonicalRepresentationOf(value)));
 			}
 			return this;
 		}
@@ -268,8 +277,15 @@ public class ImmutableTable extends Table {
 			TraversableHashMap<Object, Object> values =
 					new TraversableHashMap<>(entries.size() + (entries.size() >>> 1));
 
-			for (Entry entry : entries)
-				values.put(entry.key, entry.value);
+			for (Entry entry : entries) {
+				Object key = entry.key;
+				Object value = entry.value;
+				if (value == null) {
+					values.remove(key);
+				} else {
+					values.put(key, value);
+				}
+			}
 
 			return new ImmutableTable(values);
 		}

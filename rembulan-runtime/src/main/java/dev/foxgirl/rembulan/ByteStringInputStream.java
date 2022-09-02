@@ -34,7 +34,7 @@ public class ByteStringInputStream extends InputStream {
 	 * Constructs a new input stream from the given byte iterator.
 	 *
 	 * @param iterator  byte iterator to wrap
-	 * @throws NullPointerException  if {@code iterator} is null
+	 * @throws NullPointerException  if {@code iterator} is {@code null}
 	 */
 	public ByteStringInputStream(ByteIterator iterator) {
 		this.iterator = Objects.requireNonNull(iterator);
@@ -44,7 +44,7 @@ public class ByteStringInputStream extends InputStream {
 	 * Constructs a new input stream from the given byte string.
 	 *
 	 * @param string  byte string to wrap
-	 * @throws NullPointerException  if {@code string} is null
+	 * @throws NullPointerException  if {@code string} is {@code null}
 	 */
 	public ByteStringInputStream(ByteString string) {
 		this(string.iterator());

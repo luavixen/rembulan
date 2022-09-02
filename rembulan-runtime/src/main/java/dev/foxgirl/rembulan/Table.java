@@ -20,6 +20,8 @@ package dev.foxgirl.rembulan;
 import dev.foxgirl.rembulan.runtime.Dispatch;
 import dev.foxgirl.rembulan.runtime.ExecutionContext;
 
+import java.util.Set;
+
 /**
  * An abstract class representing a Lua table.
  *
@@ -173,7 +175,7 @@ public abstract class Table extends LuaObject {
 	 * returns the minimal key.</p>
 	 *
 	 * <p>The key returned by this method, together with the subsequent calls
-	 * to {@link #successorKeyOf(Object)} will visit all keys in this table exactly once
+	 * to {@link #successorKey(Object)} will visit all keys in this table exactly once
 	 * (in an unspecified order):</p>
 	 * <pre>
 	 *     Object k = table.initialIndex();
@@ -207,6 +209,14 @@ public abstract class Table extends LuaObject {
 	 * @throws IllegalArgumentException  when no value is associated with {@code key}
 	 *                                   in this table, or {@code key} is {@code null}
 	 */
-	public abstract Object successorKeyOf(Object key);
+	public abstract Object successorKey(Object key);
+
+	/**
+	 * Returns a {@link Set} view of the keys contained in this table. The set
+	 * is backed by the table, so changes to the table are reflected in the set.
+	 *
+	 * @return  a set view of the keys contained in this table
+	 */
+	public abstract Set<Object> keySet();
 
 }

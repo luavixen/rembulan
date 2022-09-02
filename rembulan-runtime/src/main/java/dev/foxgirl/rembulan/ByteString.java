@@ -180,7 +180,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 *
 	 * @param other  byte string to concatenate with
 	 * @return  byte string result
-	 * @throws NullPointerException  if {@code other} is null
+	 * @throws NullPointerException  if {@code other} is {@code null}
 	 */
 	public ByteString concat(ByteString other) {
 		Objects.requireNonNull(other);
@@ -222,7 +222,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 * @return
 	 *   a negative, zero, or positive integer if this byte string is
 	 *   lexicographically lesser than, equal to or greater than {@code other}
-	 * @throws NullPointerException  if {@code other} is null
+	 * @throws NullPointerException  if {@code other} is {@code null}
 	 */
 	@Override
 	public int compareTo(ByteString other) {
@@ -325,7 +325,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 *
 	 * @param bytes  byte array to copy
 	 * @return  byte string instance
-	 * @throws NullPointerException  if {@code bytes} is null
+	 * @throws NullPointerException  if {@code bytes} is {@code null}
 	 */
 	public static ByteString copyOf(byte[] bytes) {
 		if (bytes == null) {
@@ -346,7 +346,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 * @return  byte string instance
 	 * @throws IllegalArgumentException
 	 *   if the slice created by {@code start} and {@code end} is invalid
-	 * @throws NullPointerException  if {@code bytes} is null
+	 * @throws NullPointerException  if {@code bytes} is {@code null}
 	 */
 	public static ByteString copyOf(byte[] bytes, int start, int end) {
 		if (bytes == null) {
@@ -368,7 +368,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 *
 	 * @param string  string to convert
 	 * @return  byte string instance
-	 * @throws NullPointerException  if {@code string} is null
+	 * @throws NullPointerException  if {@code string} is {@code null}
 	 */
 	public static ByteString constOf(String string) {
 		return of(string);
@@ -380,7 +380,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 *
 	 * @param string  string to convert
 	 * @return  byte string instance
-	 * @throws NullPointerException  if {@code string} is null
+	 * @throws NullPointerException  if {@code string} is {@code null}
 	 */
 	public static ByteString of(String string) {
 		if (string == null) {
@@ -400,7 +400,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 * @param charset charset to use
 	 * @return  byte string instance
 	 * @throws NullPointerException
-	 *   if either {@code string} or {@code charset} is null
+	 *   if either {@code string} or {@code charset} is {@code null}
 	 */
 	public static ByteString of(String string, Charset charset) {
 		if (string == null) {
@@ -421,7 +421,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 *
 	 * @param string  string to convert
 	 * @return  byte string instance
-	 * @throws NullPointerException  if {@code string} is null
+	 * @throws NullPointerException  if {@code string} is {@code null}
 	 */
 	public static ByteString fromRaw(String string) {
 		if (string == null) {
@@ -453,7 +453,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 *
 	 * @param bytes  array of bytes to hash
 	 * @return  hash code derived from {@code bytes}
-	 * @throws NullPointerException  if {@code bytes} is null
+	 * @throws NullPointerException  if {@code bytes} is {@code null}
 	 */
 	private static int fnv1a(byte[] bytes) {
 		int hash = 0x811C9DC5;
@@ -490,7 +490,7 @@ public final class ByteString implements Comparable<ByteString>, Iterable<Byte> 
 	 *   optional Java string to associate with the resulting byte string, note that
 	 *   {@code Arrays.equals(bytes, string.getBytes(StandardCharsets.UTF_8))} must be true.
 	 * @return  interned byte string
-	 * @throws NullPointerException  if {@code bytes} is null
+	 * @throws NullPointerException  if {@code bytes} is {@code null}
 	 */
 	private static ByteString intern(byte[] bytes, String string) {
 		final int hash = fnv1a(bytes);
