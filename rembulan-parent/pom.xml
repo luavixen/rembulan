@@ -7,7 +7,7 @@
 
   <groupId>dev.foxgirl.rembulan</groupId>
   <artifactId>rembulan-parent</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>0.1.0</version>
   <packaging>pom</packaging>
 
   <name>Rembulan Parent</name>
@@ -44,10 +44,15 @@
 
   <distributionManagement>
     <repository>
+      <id>foxgirl-releases</id>
+      <name>Lua's Maven Repository</name>
+      <url>https://maven.foxgirl.dev/releases</url>
+    </repository>
+    <snapshotRepository>
       <id>foxgirl-snapshots</id>
       <name>Lua's Maven Repository</name>
       <url>https://maven.foxgirl.dev/snapshots</url>
-    </repository>
+    </snapshotRepository>
   </distributionManagement>
 
   <dependencies>
