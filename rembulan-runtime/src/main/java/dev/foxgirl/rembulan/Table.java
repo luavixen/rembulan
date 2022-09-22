@@ -142,8 +142,7 @@ public abstract class Table extends LuaObject {
 
 		if (idx == 1) {
 			return 0;
-		}
-		else {
+		} else {
 			// binary search in [idx >>> 1, idx]
 
 			long min = idx >>> 1;
@@ -156,8 +155,7 @@ public abstract class Table extends LuaObject {
 				long mid = (min + max) >>> 1;
 				if (rawget(mid) == null) {
 					max = mid;
-				}
-				else {
+				} else {
 					min = mid;
 				}
 			}
@@ -218,5 +216,20 @@ public abstract class Table extends LuaObject {
 	 * @return  a set view of the keys contained in this table
 	 */
 	public abstract Set<Object> keySet();
+
+	/**
+	 * Creates a new table using the supplied {@code factory}, and copies the
+	 * contents of this table to it.
+	 *
+	 * @param factory  the table factory to use, must not be {@code null}
+	 * @return  a copy of this table
+	 */
+	public Table copy(TableFactory factory) {
+		Table copy = factory.newTable();
+		for (Object key : keySet()) {
+			copy.rawset(key, rawget(key));
+		}
+		return copy;
+	}
 
 }

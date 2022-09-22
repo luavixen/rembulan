@@ -8,7 +8,7 @@
   <parent>
     <groupId>dev.foxgirl.rembulan</groupId>
     <artifactId>rembulan-parent</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <relativePath>../rembulan-parent</relativePath>
   </parent>
 

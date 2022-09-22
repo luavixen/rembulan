@@ -98,7 +98,7 @@ The standalone REPL mimics the behaviour or the standalone PUC-Lua interpreter a
 
 ```
 $ ./rembulan-capsule.x
-Rembulan 0.1.0 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_60)
+Rembulan 0.1.1 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_60)
 > print("hello world!")
 hello world!
 ```
@@ -123,7 +123,7 @@ To include the **runtime** as a dependency:
 <dependency>
   <groupId>dev.foxgirl.rembulan</groupId>
   <artifactId>rembulan-runtime</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
 </dependency>
 ```
 
@@ -133,7 +133,7 @@ To include the **compiler** as a dependency:
 <dependency>
   <groupId>dev.foxgirl.rembulan</groupId>
   <artifactId>rembulan-compiler</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
 </dependency>
 ```
 
@@ -143,7 +143,7 @@ To include the **standard library** as a dependency:
 <dependency>
   <groupId>dev.foxgirl.rembulan</groupId>
   <artifactId>rembulan-stdlib</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
 </dependency>
 ```
 

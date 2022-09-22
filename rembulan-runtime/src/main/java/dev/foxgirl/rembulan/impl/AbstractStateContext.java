@@ -145,9 +145,8 @@ public abstract class AbstractStateContext implements StateContext {
 	}
 
 	@Override
-	public Table newTable(int array, int hash) {
-		return tableFactory.newTable(array, hash);
+	public Table newTable(int arrayCapacity, int hashCapacity) {
+		return tableFactory.newTable(arrayCapacity, hashCapacity);
 	}
-
 
 }

@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Miroslav Janíček
+ * Copyright 2022 Lua MacDougall <lua@foxgirl.dev>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +18,13 @@
 package dev.foxgirl.rembulan;
 
 /**
- * A factory for {@link Table} instances.
+ * A factory that creates {@link Table} instances.
  */
 public interface TableFactory {
 
 	/**
-	 * Creates a new empty table. This is functionally equivalent to {@code newTable(0, 0)}.
+	 * Creates a new empty table. This is functionally equivalent to
+	 * {@code newTable(0, 0)}.
 	 *
 	 * @return new empty table
 	 * @see #newTable(int, int)
@@ -30,13 +32,13 @@ public interface TableFactory {
 	Table newTable();
 
 	/**
-	 * Creates a new empty table with the given initial capacities for its array and hash
-	 * parts.
+	 * Creates a new empty table with the given initial capacities for its
+	 * array and hash parts.
 	 *
-	 * @param array  initial capacity for the array part
-	 * @param hash  initial capacity for the hash part
+	 * @param arrayCapacity  initial capacity for the array part
+	 * @param hashCapacity  initial capacity for the hash part
 	 * @return new empty table
 	 */
-	Table newTable(int array, int hash);
+	Table newTable(int arrayCapacity, int hashCapacity);
 
 }

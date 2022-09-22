@@ -23,7 +23,7 @@ abstract class Constants {
 	/**
 	 * Version reported in the version string.
 	 */
-	public static final String VERSION = "0.1.0";
+	public static final String VERSION = "0.1.1";
 
 	/**
 	 * Default prompt for the first input line in interactive mode.

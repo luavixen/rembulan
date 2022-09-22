@@ -25,12 +25,12 @@ import dev.foxgirl.rembulan.util.TraversableHashMap;
 import java.util.*;
 
 /**
- * Default implementation of the Lua table storing all key-value pairs in a hashmap.
- * The table implementation does not support weak keys or values.
+ * Default implementation of a Lua table.
  */
 public class DefaultTable extends Table {
 
 	private static final class Factory implements TableFactory {
+
 		private static final Factory INSTANCE = new Factory();
 
 		@Override
@@ -39,13 +39,14 @@ public class DefaultTable extends Table {
 		}
 
 		@Override
-		public Table newTable(int array, int hash) {
-			return new DefaultTable(array, hash);
+		public Table newTable(int arrayCapacity, int hashCapacity) {
+			return new DefaultTable(arrayCapacity, hashCapacity);
 		}
+
 	}
 
 	/**
-	 * Returns the table factory for constructing instances of {@code DefaultTable}.
+	 * Returns the table factory for creating instances of {@code DefaultTable}.
 	 *
 	 * @return  the table factory for {@code DefaultTable}s
 	 */
@@ -91,33 +92,43 @@ public class DefaultTable extends Table {
 		return oldMetatable;
 	}
 
-	private void arrayConvert() {
-		if (hashValues == null) return;
-		for (Long key = (long) arrayValues.size() + 1L; hashValues.containsKey(key); key++) {
-			arrayValues.add(hashValues.remove(key));
+	private void performConvert() {
+		if (hashValues != null) {
+			// starting at the index after the end of the array part
+			Long index = (long) arrayValues.size() + 1L;
+			// if index is contained within the hash part, move the value at
+			// index into the array part, and increment index
+			while (hashValues.containsKey(index)) {
+				arrayValues.add(hashValues.remove(index++));
+			}
 		}
 	}
 
-	private void arrayRemove(long index) {
+	private void performRemove(long index) {
+		// attempt to remove from array part
 		if (arrayValues != null && index > 0L) {
 			int size = arrayValues.size();
+			// removing the last value in the array part
 			if (index == (long) size) {
+				// remove last value and any trailing nulls
 				int i = size - 1;
 				do { arrayValues.remove(i--); }
 				while (i >= 0 && arrayValues.get(i) == null);
 				return;
 			}
+			// removing any other value in the array part
 			if (index < (long) size) {
 				arrayValues.set((int) index - 1, null);
 				return;
 			}
 		}
+		// attempt to remove from hash part
 		if (hashValues != null) {
-			hashValues.remove(Long.valueOf(index));
+			hashValues.remove(index);
 		}
 	}
 
-	private void arraySet(long index, Object value) {
+	private void performSet(long index, Object value) {
 		if (arrayValues != null) {
 			int size = arrayValues.size();
 			if (index > 0 && index <= (long) size) {
@@ -126,27 +137,27 @@ public class DefaultTable extends Table {
 			}
 			if (index == (long) size + 1L) {
 				arrayValues.add(value);
-				arrayConvert();
+				performConvert();
 				return;
 			}
 		} else if (index == 1L) {
 			arrayValues = new ArrayList<>();
 			arrayValues.add(value);
-			arrayConvert();
+			performConvert();
 			return;
 		}
 		if (hashValues == null) {
 			hashValues = new TraversableHashMap<>();
 		}
-		hashValues.put(Long.valueOf(index), value);
+		hashValues.put(index, value);
 	}
 
 	@Override
 	public void rawset(long index, Object value) {
 		if (value == null) {
-			arrayRemove(index);
+			performRemove(index);
 		} else {
-			arraySet(index, Conversions.canonicalRepresentationOf(value));
+			performSet(index, Conversions.canonicalRepresentationOf(value));
 		}
 	}
 
@@ -156,7 +167,7 @@ public class DefaultTable extends Table {
 		if (key == null) {
 			throw new IllegalArgumentException("table index is nil");
 		}
-		if (key instanceof Double && Double.isNaN(((Double) key).doubleValue())) {
+		if (key instanceof Double && Double.isNaN((Double) key)) {
 			throw new IllegalArgumentException("table index is NaN");
 		}
 		if (key instanceof Long) {
@@ -179,7 +190,7 @@ public class DefaultTable extends Table {
 			return arrayValues.get((int) index - 1);
 		}
 		if (hashValues != null) {
-			return hashValues.get(Long.valueOf(index));
+			return hashValues.get(index);
 		}
 		return null;
 	}
@@ -231,6 +242,26 @@ public class DefaultTable extends Table {
 			}
 		}
 		throw new IllegalArgumentException("invalid key to 'next'");
+	}
+
+	@Override
+	public Table copy(TableFactory factory) {
+		Table copy = factory.newTable(
+			arrayValues != null ? arrayValues.size() : 0,
+			hashValues != null ? hashValues.size() + (hashValues.size() >>> 1) : 0
+		);
+		if (arrayValues != null) {
+			ListIterator<Object> iter = arrayValues.listIterator();
+			while (iter.hasNext()) {
+				copy.rawset((long) iter.nextIndex(), iter.next());
+			}
+		}
+		if (hashValues != null) {
+			for (Map.Entry<?, ?> entry : hashValues.entrySet()) {
+				copy.rawset(entry.getKey(), entry.getValue());
+			}
+		}
+		return copy;
 	}
 
 	private final class KeyIterator implements Iterator<Object> {

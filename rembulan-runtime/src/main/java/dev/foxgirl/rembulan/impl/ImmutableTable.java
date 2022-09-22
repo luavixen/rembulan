@@ -25,27 +25,27 @@ import dev.foxgirl.rembulan.util.TraversableHashMap;
 import java.util.*;
 
 /**
- * An immutable table.
+ * Immutable implementation of a Lua table backed by a hash map. Immutable
+ * tables cannot have metatables.
  *
  * <p>The contents of this table may be queried, but not changed: the methods
- * {@link #rawset(Object, Object)}, {@link #rawset(long, Object)} and {@link #setMetatable(Table)}
- * will throw an {@link UnsupportedOperationException}.</p>
+ * {@link #rawset(Object, Object)}, {@link #rawset(long, Object)} and
+ * {@link #setMetatable(Table)} will throw an
+ * {@link UnsupportedOperationException}.</p>
  *
- * <p>The table has no metatable.</p>
- *
- * <p>To instantiate a new {@code ImmutableTable}, use one of the static constructor methods
- * (e.g., {@link #of(Map)} )}), or a {@link ImmutableTable.Builder} as follows:</p>
+ * <p>To instantiate a new {@code ImmutableTable}, use either {@link #of(Map)}
+ * or a {@link ImmutableTable.Builder} as follows:</p>
  *
  * <pre>
- *     ImmutableTable t = new ImmutableTable.Builder()
+ *     ImmutableTable table = new ImmutableTable.Builder()
  *         .add("key1", "value1")
  *         .add("key2", "value2")
  *         .build();
  * </pre>
  *
- * <p><b>A word of caution:</b> this class violates the expectation that all Lua tables are
- * mutable, and should therefore be used with care. In order to create a mutable copy of this
- * table, use {@link #newCopy(TableFactory)}.</p>
+ * <p><b>A word of caution:</b> this class violates the expectation that all
+ * Lua tables are mutable, and should be used with care. In order to create a
+ * mutable copy of this table, use {@link #copy(TableFactory)}.</p>
  */
 public class ImmutableTable extends Table {
 
@@ -56,21 +56,21 @@ public class ImmutableTable extends Table {
 	}
 
 	/**
-	 * Returns an {@code ImmutableTable} based on the contents of the map {@code map}.
+	 * Creates a new {@code ImmutableTable} from the contents of {@code map}.
 	 *
-	 * <p>For every {@code key}-{@code value} pair in {@code map}, the behaviour of this method
+	 * <p>For every key-value pair in {@code map}, the behaviour of this method
 	 * is similar to that of {@link Table#rawset(Object, Object)}:</p>
 	 * <ul>
 	 *   <li>when {@code value} is <b>nil</b> (i.e., {@code null}), then {@code key}
 	 *     will not have any value associated with it in the resulting table;</li>
 	 *   <li>if {@code key} is <b>nil</b> or <i>NaN</i>, a {@link IllegalArgumentException}
 	 *     is thrown;</li>
-	 *   <li>if {@code key} is a number that has an integer value, it is converted to that integer
-	 *     value.</li>
+	 *   <li>if {@code key} is a number that has an integer value, it is converted
+	 *     to that integer value.</li>
 	 * </ul>
 	 *
-	 * @param map  the map used to source the contents of the table, must not be {@code null}
-	 * @return  an immutable table based on the contents of {@code map}
+	 * @param map  the map to copy from, must not be {@code null}
+	 * @return  a new immutable table
 	 *
 	 * @throws NullPointerException  if {@code entries} is {@code null}
 	 * @throws IllegalArgumentException  if {@code map} contains a {@code null} or <i>NaN</i> key
@@ -81,35 +81,6 @@ public class ImmutableTable extends Table {
 			builder.add(entry.getKey(), entry.getValue());
 		}
 		return builder.build();
-	}
-
-	/**
-	 * Returns a new table constructed using the supplied {@code factory}, and copies
-	 * the contents of this table to it.
-	 *
-	 * @param factory  the table factory to use, must not be {@code null}
-	 * @return  a mutable copy of this table
-	 */
-	public Table newCopy(TableFactory factory) {
-		Table copy = factory.newTable(0, values.size() + (values.size() >>> 1));
-		for (Map.Entry<Object, Object> entry : values.entrySet()) {
-			copy.rawset(entry.getKey(), entry.getValue());
-		}
-		return copy;
-	}
-
-	@Override
-	public int hashCode() {
-		return values.hashCode();
-	}
-
-	@Override
-	public boolean equals(Object other) {
-		if (other == this) return true;
-		if (other instanceof ImmutableTable) {
-			return values.equals(((ImmutableTable) other).values);
-		}
-		return false;
 	}
 
 	@Override
@@ -180,8 +151,17 @@ public class ImmutableTable extends Table {
 		return values.keySet();
 	}
 
+	@Override
+	public Table copy(TableFactory factory) {
+		Table copy = factory.newTable(0, values.size() + (values.size() >>> 1));
+		for (Map.Entry<Object, Object> entry : values.entrySet()) {
+			copy.rawset(entry.getKey(), entry.getValue());
+		}
+		return copy;
+	}
+
 	/**
-	 * Builder class for constructing instances of {@link ImmutableTable}.
+	 * Builder class for creating instances of {@link ImmutableTable}.
 	 */
 	public static class Builder {
 
@@ -215,7 +195,7 @@ public class ImmutableTable extends Table {
 		}
 
 		/**
-		 * Constructs a copy of the given builder (a copy constructor).
+		 * Constructs a copy of the given builder.
 		 *
 		 * @param builder  the original builder, must not be {@code null}
 		 *
@@ -231,14 +211,15 @@ public class ImmutableTable extends Table {
 		 * <p>The behaviour of this method is similar to that of
 		 * {@link Table#rawset(Object, Object)}:</p>
 		 * <ul>
-		 *   <li>when {@code value} is <b>nil</b> (i.e., {@code null}), the key {@code key}
-		 *     will not have any value associated with it after this method returns;</li>
-		 *   <li><b>nil</b> and <i>NaN</i> keys are rejected by throwing
+		 *   <li>when {@code value} is <b>nil</b> (i.e., {@code null}), the
+		 *     key {@code key} will not have any value associated with it;</li>
+		 *   <li>both <b>nil</b> and <i>NaN</i> keys are rejected by throwing
 		 *     a {@link IllegalArgumentException};</li>
-		 *   <li>numeric keys with an integer value are converted to that integer value.</li>
+		 *   <li>numeric keys with an integer value are converted to that
+		 *     integer value.</li>
 		 * </ul>
 		 *
-		 * <p>The method returns {@code this}, allowing calls to this method to be chained.</p>
+		 * <p>This method returns {@code this}, allowing calls to this method to be chained.</p>
 		 *
 		 * @param key  the key, must not be {@code null} or <i>NaN</i>
 		 * @param value  the value, may be {@code null}
@@ -268,8 +249,7 @@ public class ImmutableTable extends Table {
 		}
 
 		/**
-		 * Constructs and returns a new immutable table based on the contents of this
-		 * builder.
+		 * Creates a new immutable table from the contents of this builder.
 		 *
 		 * @return  a new immutable table
 		 */
